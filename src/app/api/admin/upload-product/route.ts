@@ -1,0 +1,132 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@sanity/client";
+import { writeFile, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+export const runtime = "nodejs";
+
+const execFileAsync = promisify(execFile);
+
+const client = createClient({
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+  token: process.env.SANITY_API_WRITE_TOKEN,
+  apiVersion: "2024-01-01",
+  useCdn: false,
+});
+
+function slugifyId(article: string): string {
+  const cleaned = article.replace(/[^a-zA-Z0-9._-]/g, "-");
+  return `product-${cleaned}`;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const form = await request.formData();
+
+    const category = String(form.get("category") || "").trim();
+    const categoryTitle = String(form.get("categoryTitle") || "").trim();
+    const article = String(form.get("article") || "").trim();
+    const title = String(form.get("title") || "").trim();
+    const brand = String(form.get("brand") || "").trim();
+    const price = Number(form.get("price") || 0);
+    const inStock = form.get("inStock") === "true";
+    const description = String(form.get("description") || "").trim();
+    const specs = String(form.get("specs") || "").trim();
+    const social = form.get("social") === "true";
+
+    if (!category || !article || !title || !price) {
+      return NextResponse.json(
+        { error: "Заполните обязательные поля: категория, артикул, название, цена" },
+        { status: 400 }
+      );
+    }
+
+    const photoFiles = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+    const videoEntry = form.get("video");
+    const videoFile = videoEntry instanceof File && videoEntry.size > 0 ? videoEntry : null;
+    const modelEntry = form.get("model");
+    const modelFile = modelEntry instanceof File && modelEntry.size > 0 ? modelEntry : null;
+
+    const images = [];
+    for (const file of photoFiles) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const asset = await client.assets.upload("image", buffer, { filename: file.name });
+      images.push({
+        _type: "image" as const,
+        _key: `${article}-${images.length}`,
+        asset: { _type: "reference" as const, _ref: asset._id },
+      });
+    }
+
+    let model = undefined;
+    if (modelFile) {
+      const buffer = Buffer.from(await modelFile.arrayBuffer());
+      const asset = await client.assets.upload("file", buffer, { filename: modelFile.name });
+      model = { _type: "file" as const, asset: { _type: "reference" as const, _ref: asset._id } };
+    }
+
+    await client.createOrReplace({
+      _id: slugifyId(article),
+      _type: "product",
+      category,
+      article,
+      title,
+      brand: brand || undefined,
+      price,
+      inStock,
+      description: description || undefined,
+      specs: specs || undefined,
+      images,
+      model,
+    });
+
+    let socialResult: string | null = null;
+    if (social) {
+      const tmpDir = await mkdtemp(path.join(tmpdir(), "sanbazar-upload-"));
+      try {
+        const photoPaths: string[] = [];
+        for (const file of photoFiles) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const dest = path.join(tmpDir, file.name);
+          await writeFile(dest, buffer);
+          photoPaths.push(dest);
+        }
+        let videoPath: string | undefined;
+        if (videoFile) {
+          const buffer = Buffer.from(await videoFile.arrayBuffer());
+          const dest = path.join(tmpDir, videoFile.name);
+          await writeFile(dest, buffer);
+          videoPath = dest;
+        }
+
+        const payload = JSON.stringify({
+          article,
+          brand,
+          category: categoryTitle,
+          price,
+          specs,
+          photoPaths,
+          videoPath,
+        });
+
+        // website/ → .. → SanBazar/ → Инстаграмм/bot/
+        const syncScript = path.resolve(process.cwd(), "..", "Инстаграмм", "bot", "sync_from_catalog.py");
+        const { stdout } = await execFileAsync("python", [syncScript, payload], {
+          env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+        });
+        socialResult = stdout.trim();
+      } finally {
+        await rm(tmpDir, { recursive: true, force: true });
+      }
+    }
+
+    return NextResponse.json({ success: true, id: slugifyId(article), social: socialResult });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+}

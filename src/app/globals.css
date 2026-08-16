@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --color-brand-blue: #1e6fe6;
+  --color-brand-blue-light: #4a92ff;
+  --color-brand-navy: #0b1422;
+  --color-brand-navy-deep: #060b13;
+  --color-brand-chrome: #c7d2e5;
+  --color-brand-ink: #f2f4f7;
+  --color-brand-muted: #8f9bb3;
+}
+
+@theme inline {
+  --color-brand-blue: var(--color-brand-blue);
+  --color-brand-blue-light: var(--color-brand-blue-light);
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-navy-deep: var(--color-brand-navy-deep);
+  --color-brand-chrome: var(--color-brand-chrome);
+  --color-brand-ink: var(--color-brand-ink);
+  --color-brand-muted: var(--color-brand-muted);
+  --font-display: var(--font-syne);
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-jetbrains);
+}
+
+html {
+  background: var(--color-brand-navy-deep);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-brand-navy-deep);
+  color: var(--color-brand-ink);
+  overscroll-behavior: none;
+}
+
+::selection {
+  background: var(--color-brand-blue);
+  color: #ffffff;
+}
+
+/* Custom cursor replaces the system one on fine-pointer devices only */
+body.has-custom-cursor,
+body.has-custom-cursor * {
+  cursor: none !important;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.stroke-text {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-brand-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-brand-navy-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: #1a2740;
+  border: 2px solid var(--color-brand-navy-deep);
+  border-radius: 999px;
+}
+
+.input-base {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(11, 20, 34, 0.6);
+  padding: 0.65rem 0.9rem;
+  font-size: 14px;
+  color: var(--color-brand-ink);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.input-base:focus {
+  border-color: rgba(30, 111, 230, 0.6);
+}
+.input-base::placeholder {
+  color: var(--color-brand-muted);
+}
+
+.cursor-ring--active {
+  width: 3.75rem !important;
+  height: 3.75rem !important;
+  background: rgba(30, 111, 230, 0.12);
+  border-color: rgba(30, 111, 230, 0.9) !important;
+}
