@@ -17,16 +17,54 @@ function buildOrderText(items: { title: string; article: string; qty: number; pr
   return lines.join("\n");
 }
 
+type OrgState = "idle" | "form" | "submitting" | "sent" | "error";
+
 export default function Cart() {
   const { items, removeItem, setQty, clear, count, total } = useCart();
   const [open, setOpen] = useState(false);
   const [kaspiNotice, setKaspiNotice] = useState(false);
+
+  const [orgState, setOrgState] = useState<OrgState>("idle");
+  const [orgError, setOrgError] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   const handleKaspiClick = () => {
     // Оплата Kaspi Pay ещё не подключена — нужен API-ключ продавца.
     // Кнопка уже стоит на месте, чтобы включить её было делом одной правки.
     setKaspiNotice(true);
     window.setTimeout(() => setKaspiNotice(false), 3500);
+  };
+
+  const handleOrgSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrgState("submitting");
+    setOrgError("");
+    try {
+      const res = await fetch("/api/org-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName,
+          contactEmail,
+          contactPhone,
+          items: items.map((it) => ({
+            article: it.article,
+            title: it.title,
+            price: it.price,
+            qty: it.qty,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось отправить заявку");
+      setOrgState("sent");
+      clear();
+    } catch (err) {
+      setOrgState("error");
+      setOrgError((err as Error).message);
+    }
   };
 
   if (count === 0 && !open) return null;
@@ -158,6 +196,65 @@ export default function Cart() {
                         Онлайн-оплата Kaspi скоро будет доступна — пока оформите заказ через Telegram.
                       </p>
                     )}
+
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                      {orgState === "idle" && (
+                        <button
+                          type="button"
+                          onClick={() => setOrgState("form")}
+                          className="font-mono-label w-full text-center text-[11px] uppercase text-brand-blue-light hover:text-brand-ink"
+                        >
+                          Нужно коммерческое предложение для организации? →
+                        </button>
+                      )}
+
+                      {orgState === "sent" && (
+                        <p className="text-center text-[12px] leading-relaxed text-brand-muted">
+                          Заявка принята — КП придёт на {contactEmail} в ближайшее время.
+                        </p>
+                      )}
+
+                      {(orgState === "form" || orgState === "submitting" || orgState === "error") && (
+                        <form onSubmit={handleOrgSubmit} className="space-y-2.5">
+                          <p className="font-mono-label text-[10px] uppercase text-brand-muted">
+                            Для организации — КП придёт на почту
+                          </p>
+                          <input
+                            required
+                            placeholder="Название компании"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            className="input-base w-full"
+                          />
+                          <input
+                            required
+                            type="email"
+                            placeholder="Email для КП"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            className="input-base w-full"
+                          />
+                          <input
+                            placeholder="Телефон (необязательно)"
+                            value={contactPhone}
+                            onChange={(e) => setContactPhone(e.target.value)}
+                            className="input-base w-full"
+                          />
+                          {orgState === "error" && (
+                            <p className="text-[11px] text-red-400">{orgError}</p>
+                          )}
+                          <button
+                            type="submit"
+                            disabled={orgState === "submitting"}
+                            data-cursor-magnetic
+                            className="font-mono-label w-full rounded-full bg-brand-blue px-3 py-3 text-[11px] uppercase tracking-wide text-white transition-colors hover:bg-brand-blue-light disabled:opacity-60"
+                          >
+                            {orgState === "submitting" ? "Отправляю…" : "Отправить КП на почту"}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+
                     <button
                       type="button"
                       onClick={clear}
