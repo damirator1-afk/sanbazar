@@ -5,6 +5,7 @@
 const BRAND_LOGOS: Record<string, string> = {
   "ани пласт": "/brand-logos/ani-plast.png",
   "aquant": "/brand-logos/aquant.png",
+  "sanita": "/brand-logos/sanita.png",
 };
 
 export function getBrandLogo(brand: string | null | undefined): string | null {
