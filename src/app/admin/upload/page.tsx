@@ -109,7 +109,7 @@ export default function AdminUploadPage() {
       setState("success");
       setMessage(
         data.social
-          ? `Товар «${article}» загружен на сайт и добавлен черновиком в соцсети (${data.social}).`
+          ? `Товар «${article}» загружен на сайт. ${data.social}`
           : `Товар «${article}» загружен на сайт.`
       );
       resetForm();
