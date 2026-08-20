@@ -39,7 +39,7 @@ export default function Cart() {
         type="button"
         onClick={() => setOpen(true)}
         data-cursor-magnetic
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border border-white/15 bg-brand-navy-deep/80 px-5 py-3.5 backdrop-blur-md transition-colors hover:border-brand-blue/50 sm:right-10"
+        className="fixed bottom-20 right-6 z-40 flex items-center gap-2 rounded-full border border-white/15 bg-brand-navy-deep/80 px-5 py-3.5 backdrop-blur-md transition-colors hover:border-brand-blue/50 sm:right-10"
       >
         <span className="font-mono-label text-[11px] uppercase text-brand-ink">Корзина</span>
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-blue px-1.5 text-[10px] font-bold text-white">

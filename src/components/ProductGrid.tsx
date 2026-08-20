@@ -132,11 +132,13 @@ export default function ProductGrid({ products }: ProductGridProps) {
                 <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-brand-muted">{p.specs}</p>
               )}
               <div className="mt-auto pt-4">
-                <div>
+                <div className="flex items-center gap-2">
                   <span className="font-display text-lg font-bold text-brand-ink">
                     {priceFormatter.format(p.price)} ₸
                   </span>
-                  <span className="font-mono-label ml-1 text-[9px] text-brand-muted">/ ОПТ</span>
+                  <span className="font-mono-label rounded-full bg-white/10 px-2 py-0.5 text-[9px] uppercase text-brand-muted">
+                    ОПТ
+                  </span>
                 </div>
                 <AddToCartButton product={p} />
               </div>
