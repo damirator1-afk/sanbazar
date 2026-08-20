@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Product } from "@/sanity/lib/queries";
 import { useCart } from "@/components/CartProvider";
+import { getBrandLogo } from "@/lib/brandLogos";
 
 const ModelViewer = dynamic(() => import("@/components/ModelViewer"), { ssr: false });
 
@@ -123,7 +124,18 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
             <div className="flex flex-1 flex-col p-5">
               {p.brand && (
-                <span className="font-mono-label text-[9px] uppercase text-brand-blue-light">{p.brand}</span>
+                <div className="flex items-center gap-1.5">
+                  {getBrandLogo(p.brand) && (
+                    <Image
+                      src={getBrandLogo(p.brand)!}
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="h-4 w-4 object-contain"
+                    />
+                  )}
+                  <span className="font-mono-label text-[9px] uppercase text-brand-blue-light">{p.brand}</span>
+                </div>
               )}
               <h3 className="font-display mt-1.5 text-[15px] font-semibold leading-snug text-brand-ink">
                 {p.title}
