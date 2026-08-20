@@ -124,15 +124,17 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
             <div className="flex flex-1 flex-col p-5">
               {p.brand && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {getBrandLogo(p.brand) && (
-                    <Image
-                      src={getBrandLogo(p.brand)!}
-                      alt=""
-                      width={16}
-                      height={16}
-                      className="h-4 w-4 object-contain"
-                    />
+                    <span className="flex h-7 w-11 shrink-0 items-center justify-center rounded-md bg-white/95 p-1">
+                      <Image
+                        src={getBrandLogo(p.brand)!}
+                        alt=""
+                        width={72}
+                        height={40}
+                        className="h-full w-full object-contain"
+                      />
+                    </span>
                   )}
                   <span className="font-mono-label text-[9px] uppercase text-brand-blue-light">{p.brand}</span>
                 </div>
