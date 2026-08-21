@@ -16,7 +16,17 @@ export const publishJob = defineType({
       title: "Дата публикации",
       type: "datetime",
       description: "Instagram: публикуется в это время (дата должна быть в будущем на момент постановки в очередь). Telegram: публикуется, как только эта дата/время наступит.",
-      validation: (rule) => rule.required(),
+      validation: (rule) =>
+        rule.custom((value, context) => {
+          const doc = context.document as { instagramStatus?: string; telegramStatus?: string } | undefined;
+          const active =
+            (doc?.instagramStatus && doc.instagramStatus !== "черновик") ||
+            (doc?.telegramStatus && doc.telegramStatus !== "черновик");
+          if (!value && active) {
+            return "Статус снят с «черновика», а дата публикации не указана — бот выдаст ошибку. Укажите дату или верните статус «черновик».";
+          }
+          return true;
+        }),
     }),
     defineField({
       name: "brand",
@@ -93,8 +103,18 @@ export const publishJob = defineType({
       name: "instagramStatus",
       title: "Статус (Instagram)",
       type: "string",
-      description: "«Черновик» — публикация не трогает эту запись, пока дата не заполнена и статус не изменён вручную.",
-      options: { list: ["черновик", "ожидает", "в очереди", "опубликовано", "опубликовано вручную", "ошибка"] },
+      description: "«Черновик» — публикация не трогает эту запись, пока дата не заполнена и статус не изменён вручную. «Архив» — бот тоже не трогает: для старых записей, у которых дата публикации навсегда в прошлом (Instagram такую не примет, повторять бессмысленно).",
+      options: {
+        list: [
+          "черновик",
+          "ожидает",
+          "в очереди",
+          "опубликовано",
+          "опубликовано вручную",
+          "ошибка",
+          "архив",
+        ],
+      },
       initialValue: "ожидает",
     }),
     defineField({

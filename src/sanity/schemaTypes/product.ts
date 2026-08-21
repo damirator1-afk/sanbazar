@@ -82,6 +82,13 @@ export const product = defineType({
       description: "Файл .glb/.gltf (напр. экспорт из Tripo3D) — показывается как вращаемая 3D-модель вместо фото.",
       options: { accept: ".glb,.gltf" },
     }),
+    defineField({
+      name: "video",
+      title: "Видео",
+      description: "Необязательно — для будущего использования на карточке товара (сейчас не отображается на сайте, только хранится).",
+      type: "file",
+      options: { accept: ".mp4,.mov" },
+    }),
   ],
   preview: {
     select: { title: "title", subtitle: "article", media: "images.0" },
