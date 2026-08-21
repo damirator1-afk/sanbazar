@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@sanity/client";
-import { writeFile, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { upsertSocialDraft } from "@/lib/socialDraft";
 
 export const runtime = "nodejs";
-
-const execFileAsync = promisify(execFile);
 
 const client = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
@@ -86,56 +80,26 @@ export async function POST(request: NextRequest) {
 
     let socialResult: string | null = null;
     if (social) {
-      // The Instagram/Telegram draft script (Инстаграмм/bot/sync_from_catalog.py)
-      // only exists on the owner's own machine — it's never deployed to
-      // Vercel, and there's no Python runtime there either. Only attempt
-      // this when actually running locally (`npm run dev` / `next start`
-      // on the owner's PC); on Vercel, skip it with a clear message
-      // instead of failing the whole request after the product already
-      // saved successfully.
-      if (process.env.VERCEL) {
-        socialResult = "Черновик в Instagram/Telegram доступен только при запуске сайта локально на компьютере владельца — на sanbazar.com это не выполняется.";
-      } else {
-        const tmpDir = await mkdtemp(path.join(tmpdir(), "sanbazar-upload-"));
-        try {
-          const photoPaths: string[] = [];
-          for (const file of photoFiles) {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const dest = path.join(tmpDir, file.name);
-            await writeFile(dest, buffer);
-            photoPaths.push(dest);
-          }
-          let videoPath: string | undefined;
-          if (videoFile) {
-            const buffer = Buffer.from(await videoFile.arrayBuffer());
-            const dest = path.join(tmpDir, videoFile.name);
-            await writeFile(dest, buffer);
-            videoPath = dest;
-          }
-
-          const payload = JSON.stringify({
-            article,
-            brand,
-            category: categoryTitle,
-            price,
-            specs,
-            photoPaths,
-            videoPath,
-          });
-
-          // website/ → .. → SanBazar/ → Инстаграмм/bot/
-          const syncScript = path.resolve(process.cwd(), "..", "Инстаграмм", "bot", "sync_from_catalog.py");
-          const { stdout } = await execFileAsync("python", [syncScript, payload], {
-            env: { ...process.env, PYTHONIOENCODING: "utf-8" },
-          });
-          socialResult = stdout.trim();
-        } catch (err) {
-          // don't let a failed *optional* draft step erase a product that
-          // already saved to Sanity successfully above
-          socialResult = `Товар сохранён, но черновик в Instagram/Telegram не удался: ${(err as Error).message}`;
-        } finally {
-          await rm(tmpDir, { recursive: true, force: true });
-        }
+      let video = undefined;
+      if (videoFile) {
+        const buffer = Buffer.from(await videoFile.arrayBuffer());
+        const asset = await client.assets.upload("file", buffer, { filename: videoFile.name });
+        video = { _type: "file" as const, asset: { _type: "reference" as const, _ref: asset._id } };
+      }
+      try {
+        socialResult = await upsertSocialDraft(client, {
+          article,
+          brand,
+          category: categoryTitle,
+          price,
+          specs,
+          images,
+          video,
+        });
+      } catch (err) {
+        // don't let a failed *optional* draft step erase a product that
+        // already saved to Sanity successfully above
+        socialResult = `Товар сохранён, но черновик в Instagram/Telegram не удался: ${(err as Error).message}`;
       }
     }
 

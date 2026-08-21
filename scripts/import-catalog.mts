@@ -11,13 +11,13 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import * as XLSX from "xlsx";
 import { createClient } from "@sanity/client";
 import { PRODUCT_CATEGORIES } from "../src/sanity/schemaTypes/product";
+import { upsertSocialDraft } from "../src/lib/socialDraft";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,9 +27,6 @@ loadEnv({ path: path.resolve(__dirname, "..", ".env.local") });
 const CATALOG_DIR = path.resolve(__dirname, "..", "..", "каталог");
 const TEMPLATE_PATH = path.join(CATALOG_DIR, "шаблон_каталога.xlsx");
 const PHOTOS_DIR = path.join(CATALOG_DIR, "фото");
-
-// website/scripts/ → ../.. → SanBazar/ → Инстаграмм/bot/
-const SYNC_SCRIPT_PATH = path.resolve(__dirname, "..", "..", "Инстаграмм", "bot", "sync_from_catalog.py");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MODEL_EXTENSIONS = [".glb", ".gltf"];
@@ -162,19 +159,15 @@ async function uploadImages(article: string, files: string[]) {
   return refs;
 }
 
-function syncToSocialQueue(row: ProductRow, photoFiles: string[]) {
-  const payload = JSON.stringify({
+async function syncToSocialQueue(row: ProductRow, images: Awaited<ReturnType<typeof uploadImages>>) {
+  const result = await upsertSocialDraft(client, {
     article: row.article,
     brand: row.brand,
     category: row.categoryTitle,
     price: row.price,
     specs: row.specs,
-    photoPaths: photoFiles,
+    images,
   });
-  const result = execFileSync("python", [SYNC_SCRIPT_PATH, payload], {
-    encoding: "utf-8",
-    env: { ...process.env, PYTHONIOENCODING: "utf-8" },
-  }).trim();
   console.log(`  -> соцсети: ${result}`);
 }
 
@@ -241,7 +234,7 @@ async function main() {
 
       if (row.social) {
         try {
-          syncToSocialQueue(row, photoFiles);
+          await syncToSocialQueue(row, images);
         } catch (err) {
           warnings.push(`Артикул "${row.article}": не удалось добавить в очередь соцсетей — ${(err as Error).message}`);
         }
