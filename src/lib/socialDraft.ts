@@ -27,6 +27,17 @@ export interface SocialDraftParams {
   specs?: string;
   images: ImageRef[];
   video?: FileRef;
+  // Необязательные поля расписания публикации (напр. из дополнительных
+  // колонок каталога) — заполняются только при СОЗДАНИИ нового черновика.
+  // На уже существующий publishJob они никогда не влияют, даже если при
+  // повторном импорте эти колонки заполнены — дату/формат/статус мог
+  // поменять владелец вручную в Studio, перезаписывать нельзя.
+  publishAt?: string; // ISO 8601 (UTC)
+  format?: string;
+  theme?: string;
+  oldPrice?: number;
+  promoText?: string;
+  postText?: string;
 }
 
 function slugifyId(article: string): string {
@@ -54,6 +65,11 @@ export async function upsertSocialDraft(client: SanityClient, params: SocialDraf
     return `updated:${params.article}`;
   }
 
+  // если дата публикации указана прямо в каталоге — черновик сразу готов
+  // к автоматической публикации (статус "ожидает"), Studio не нужна;
+  // без даты — обычный черновик, как раньше, дозаполняется вручную
+  const ready = Boolean(params.publishAt);
+
   await client.create({
     _id: id,
     _type: "publishJob",
@@ -62,12 +78,16 @@ export async function upsertSocialDraft(client: SanityClient, params: SocialDraf
     category: params.category || undefined,
     specs: params.specs || undefined,
     price: params.price,
-    format: "карусель",
-    theme: "standard",
+    oldPrice: params.oldPrice,
+    promoText: params.promoText || undefined,
+    postText: params.postText || undefined,
+    publishAt: params.publishAt,
+    format: params.format || "карусель",
+    theme: params.theme || "standard",
     photos,
     video: params.video,
-    instagramStatus: "черновик",
-    telegramStatus: "черновик",
+    instagramStatus: ready ? "ожидает" : "черновик",
+    telegramStatus: ready ? "ожидает" : "черновик",
   });
   return `created:${params.article}`;
 }

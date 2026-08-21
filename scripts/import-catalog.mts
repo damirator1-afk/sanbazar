@@ -66,6 +66,56 @@ interface ProductRow {
   description: string;
   specs: string;
   social: boolean;
+  // Необязательные колонки расписания публикации — если заполнены,
+  // черновик в очереди публикаций создаётся сразу готовым (без захода в
+  // Studio); см. upsertSocialDraft.
+  publishAt?: string;
+  format?: string;
+  theme?: string;
+  oldPrice?: number;
+  promoText?: string;
+  postText?: string;
+}
+
+// Ячейка с датой в Excel парсится библиотекой xlsx как JS Date, но с
+// компонентами (год/месяц/день/час/минута) как они введены — трактуем их
+// как локальное время Алматы (UTC+5) и переводим в UTC ISO для Sanity,
+// как и исторический перенос очереди (migrate_queue_to_sanity.py).
+const ALMATY_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+// publishJob.theme хранит значения "standard"/"premium" (см. schemaTypes/
+// publishJob.ts), а в Excel владельцу удобнее писать по-русски
+const THEME_MAP: Record<string, string> = {
+  "стандарт": "standard",
+  "standard": "standard",
+  "премиум": "premium",
+  "premium": "premium",
+};
+
+function parsePublishAt(raw: unknown): string | undefined {
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  let y: number, mo: number, d: number, h: number, mi: number;
+  if (raw instanceof Date) {
+    // xlsx строит Date из серийного номера Excel через UTC-компоненты —
+    // читаем их обратно через getUTC*, а не local-геттеры, иначе результат
+    // зависел бы от часового пояса, в котором запущен этот скрипт
+    y = raw.getUTCFullYear();
+    mo = raw.getUTCMonth();
+    d = raw.getUTCDate();
+    h = raw.getUTCHours();
+    mi = raw.getUTCMinutes();
+  } else {
+    const s = String(raw).trim();
+    const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[ T](\d{1,2}):(\d{2}))?$/);
+    if (!m) return undefined;
+    d = Number(m[1]);
+    mo = Number(m[2]) - 1;
+    y = Number(m[3]);
+    h = m[4] ? Number(m[4]) : 10;
+    mi = m[5] ? Number(m[5]) : 0;
+  }
+  const almatyAsUtcMs = Date.UTC(y, mo, d, h, mi);
+  return new Date(almatyAsUtcMs - ALMATY_OFFSET_MS).toISOString();
 }
 
 function readRows(): ProductRow[] {
@@ -76,7 +126,10 @@ function readRows(): ProductRow[] {
   // XLSX.readFile isn't exposed via this package's ESM build — reading
   // the buffer ourselves and using XLSX.read works in any environment
   const buf = readFileSync(TEMPLATE_PATH);
-  const wb = XLSX.read(buf, { type: "buffer" });
+  // cellDates: true — иначе ячейка "Дата публикации", отформатированная в
+  // Excel как дата (а не введённая текстом), придёт числом (серийная дата
+  // Excel), а не JS Date, и parsePublishAt тихо её пропустит
+  const wb = XLSX.read(buf, { type: "buffer", cellDates: true });
   const sheet = wb.Sheets["Товары"];
   if (!sheet) {
     console.error('На листе "Товары" не найдены данные — проверьте имя листа в файле.');
@@ -87,10 +140,10 @@ function readRows(): ProductRow[] {
 
   const rows: ProductRow[] = [];
   for (const r of dataRows) {
-    const [category, article, title, brand, price, inStock, description, specs, social] = r as (
-      | string
-      | number
-    )[];
+    const [
+      category, article, title, brand, price, inStock, description, specs, social,
+      publishAtRaw, format, theme, oldPrice, promoText, postText,
+    ] = r as (string | number)[];
     if (!category && !article) continue; // blank trailing row
     rows.push({
       categoryTitle: String(category ?? "").trim(),
@@ -102,6 +155,12 @@ function readRows(): ProductRow[] {
       description: String(description ?? "").trim(),
       specs: String(specs ?? "").trim(),
       social: String(social ?? "").trim().toLowerCase() === "да",
+      publishAt: parsePublishAt(publishAtRaw),
+      format: String(format ?? "").trim() || undefined,
+      theme: THEME_MAP[String(theme ?? "").trim().toLowerCase()] || undefined,
+      oldPrice: oldPrice ? Number(oldPrice) || undefined : undefined,
+      promoText: String(promoText ?? "").trim() || undefined,
+      postText: String(postText ?? "").trim() || undefined,
     });
   }
   return rows;
@@ -167,6 +226,12 @@ async function syncToSocialQueue(row: ProductRow, images: Awaited<ReturnType<typ
     price: row.price,
     specs: row.specs,
     images,
+    publishAt: row.publishAt,
+    format: row.format,
+    theme: row.theme,
+    oldPrice: row.oldPrice,
+    promoText: row.promoText,
+    postText: row.postText,
   });
   console.log(`  -> соцсети: ${result}`);
 }
