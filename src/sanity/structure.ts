@@ -33,7 +33,39 @@ export const structure: StructureResolver = (S) =>
   S.list()
     .title('Content')
     .items([
-      S.documentTypeListItem('product').title('Товары'),
+      S.listItem()
+        .title('Товары')
+        .child(
+          S.list()
+            .title('Товары')
+            .items([
+              S.listItem().title('Все товары').child(S.documentTypeList('product').title('Все товары')),
+              S.listItem()
+                .title('По брендам')
+                .child(async (_itemId, context) => {
+                  const client = context.structureContext.getClient({apiVersion: '2024-01-01'})
+                  const brands: string[] = await client.fetch(
+                    `array::unique(*[_type == "product" && defined(brand) && brand != ""].brand)`
+                  )
+                  return S.list()
+                    .title('По брендам')
+                    .items(
+                      brands
+                        .sort((a, b) => a.localeCompare(b, 'ru'))
+                        .map((brand) =>
+                          S.listItem()
+                            .title(brand)
+                            .child(
+                              S.documentList()
+                                .title(brand)
+                                .filter('_type == "product" && brand == $brand')
+                                .params({brand})
+                            )
+                        )
+                    )
+                }),
+            ])
+        ),
       S.listItem()
         .title('Публикации (Instagram/Telegram)')
         .child(
