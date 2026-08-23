@@ -11,9 +11,9 @@ import CustomCursor from "@/components/CustomCursor";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
 
-// re-fetch from Sanity at most once a minute — new/edited products in
-// the Studio show up without needing a redeploy
-export const revalidate = 60;
+// re-fetch from Sanity at most every 10 sec — new/edited products in the
+// Studio (incl. hiding a product) show up quickly without a redeploy
+export const revalidate = 10;
 
 export function generateStaticParams() {
   return CATEGORIES.map((c) => ({ key: c.key }));
