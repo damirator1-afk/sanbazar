@@ -58,6 +58,11 @@ export async function POST(request: NextRequest) {
 
     let model = undefined;
     if (modelFile) {
+      // Загружается как есть, без сжатия геометрии — в отличие от
+      // import-catalog.mts (см. src/lib/optimizeModel.ts), этот роут
+      // выполняется в serverless-окружении Vercel, где нельзя надёжно
+      // шелльнуться в CLI-тул. Тяжёлые модели (напр. из Tripo AI) лучше
+      // сжимать локально перед загрузкой через эту форму.
       const buffer = Buffer.from(await modelFile.arrayBuffer());
       const asset = await client.assets.upload("file", buffer, { filename: modelFile.name });
       model = { _type: "file" as const, asset: { _type: "reference" as const, _ref: asset._id } };

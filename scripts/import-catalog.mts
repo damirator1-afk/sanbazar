@@ -18,6 +18,7 @@ import * as XLSX from "xlsx";
 import { createClient } from "@sanity/client";
 import { PRODUCT_CATEGORIES } from "../src/sanity/schemaTypes/product";
 import { upsertSocialDraft } from "../src/lib/socialDraft";
+import { optimizeModel } from "../src/lib/optimizeModel";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -192,10 +193,9 @@ function findModel(article: string): string | null {
 }
 
 async function uploadModel(filePath: string) {
-  const buffer = readFileSync(filePath);
-  const asset = await client.assets.upload("file", buffer, {
-    filename: path.basename(filePath),
-  });
+  const buffer = await optimizeModel(filePath);
+  const filename = path.basename(filePath).replace(/\.(glb|gltf)$/i, ".glb");
+  const asset = await client.assets.upload("file", buffer, {filename});
   return {
     _type: "file" as const,
     asset: { _type: "reference" as const, _ref: asset._id },
