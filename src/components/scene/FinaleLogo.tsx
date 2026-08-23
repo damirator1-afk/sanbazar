@@ -30,7 +30,7 @@ export default function FinaleLogo() {
   const groupVisible = useRef(false);
   const logoRef = useRef<Mesh>(null);
   const labelRef = useRef<HTMLDivElement>(null);
-  const texture = useTexture("/logo-medallion-icon-ring.png");
+  const texture = useTexture("/logo-medallion-circle.png");
 
   const dummy = useMemo(() => new Object3D(), []);
   const upAxis = useMemo(() => new Vector3(0, 1, 0), []);
@@ -136,10 +136,7 @@ export default function FinaleLogo() {
         ref={logoRef}
         position={[FINALE_CENTER.x, FINALE_CENTER.y, FINALE_CENTER.z + 0.03]}
       >
-        {/* текстура обрезана точно по контуру кольца+иконки (525×605,
-            не квадрат) — держим план в тех же пропорциях, иначе картинка
-            слегка растягивается по горизонтали */}
-        <planeGeometry args={[2.5 * (525 / 605), 2.5]} />
+        <planeGeometry args={[2.5, 2.5]} />
         <meshBasicMaterial map={texture} transparent opacity={0} toneMapped={false} />
       </mesh>
 
