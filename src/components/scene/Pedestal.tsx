@@ -10,11 +10,6 @@ export default function Pedestal() {
         <cylinderGeometry args={[PEDESTAL_RADIUS, PEDESTAL_RADIUS * 1.08, PEDESTAL_HEIGHT, 48]} />
         <meshStandardMaterial {...pedestalMaterial} />
       </mesh>
-      {/* thin chrome accent ring at the top edge */}
-      <mesh position={[0, PEDESTAL_HEIGHT, 0]}>
-        <torusGeometry args={[PEDESTAL_RADIUS, 0.012, 12, 64]} />
-        <meshStandardMaterial color="#c7d2e5" metalness={1} roughness={0.25} />
-      </mesh>
     </group>
   );
 }
