@@ -30,7 +30,7 @@ export default function FinaleLogo() {
   const groupVisible = useRef(false);
   const logoRef = useRef<Mesh>(null);
   const labelRef = useRef<HTMLDivElement>(null);
-  const texture = useTexture("/logo-medallion-circle.png");
+  const texture = useTexture("/logo-medallion-icon-ring.png");
 
   const dummy = useMemo(() => new Object3D(), []);
   const upAxis = useMemo(() => new Vector3(0, 1, 0), []);
