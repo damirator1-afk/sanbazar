@@ -136,7 +136,10 @@ export default function FinaleLogo() {
         ref={logoRef}
         position={[FINALE_CENTER.x, FINALE_CENTER.y, FINALE_CENTER.z + 0.03]}
       >
-        <planeGeometry args={[2.5, 2.5]} />
+        {/* текстура теперь обрезана точно по контуру кольца+иконки (525×609,
+            не квадрат) — держим план в тех же пропорциях, иначе картинка
+            слегка растягивается по горизонтали */}
+        <planeGeometry args={[2.5 * (525 / 609), 2.5]} />
         <meshBasicMaterial map={texture} transparent opacity={0} toneMapped={false} />
       </mesh>
 
