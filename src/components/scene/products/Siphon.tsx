@@ -31,11 +31,11 @@ export default function Siphon() {
   // единственный постамент с настоящим сканом вместо статичной абстрактной
   // сборки — без вращения читается как неживое фото, а не экспонат
   useFrame((_, delta) => {
-    if (groupRef.current) groupRef.current.rotation.y += delta * 0.4;
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.6;
   });
 
   return (
-    <group ref={groupRef} scale={1.1} position={[0, 0, 0]}>
+    <group ref={groupRef} scale={1.65} position={[0, 0, 0]}>
       <primitive object={scene} />
     </group>
   );
