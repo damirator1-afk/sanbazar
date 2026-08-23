@@ -37,7 +37,18 @@ export default function ModelViewer({ url }: ModelViewerProps) {
           <Model url={url} />
         </Bounds>
       </Suspense>
-      <OrbitControls makeDefault enableZoom enablePan={false} autoRotate autoRotateSpeed={1.2} />
+      <OrbitControls
+        makeDefault
+        enableZoom
+        enablePan={false}
+        autoRotate
+        autoRotateSpeed={1.2}
+        enableDamping
+        dampingFactor={0.08}
+        rotateSpeed={0.6}
+        minPolarAngle={Math.PI * 0.15}
+        maxPolarAngle={Math.PI * 0.85}
+      />
     </Canvas>
   );
 }
