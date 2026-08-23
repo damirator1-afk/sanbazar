@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { Mesh } from "three";
+import { Group, Mesh } from "three";
 
 // Настоящая 3D-модель товара (V512-18-MR, Tripo AI) вместо абстрактной
 // хромированной сборки из труб — единственный постамент в шоуруме с
@@ -16,6 +17,7 @@ const MODEL_URL = "/models/siphon.glb";
 
 export default function Siphon() {
   const { scene } = useGLTF(MODEL_URL);
+  const groupRef = useRef<Group>(null);
 
   useEffect(() => {
     scene.traverse((obj) => {
@@ -26,8 +28,14 @@ export default function Siphon() {
     });
   }, [scene]);
 
+  // единственный постамент с настоящим сканом вместо статичной абстрактной
+  // сборки — без вращения читается как неживое фото, а не экспонат
+  useFrame((_, delta) => {
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.4;
+  });
+
   return (
-    <group scale={0.55} position={[-0.25, 0, 0]}>
+    <group ref={groupRef} scale={1.1} position={[0, 0, 0]}>
       <primitive object={scene} />
     </group>
   );
