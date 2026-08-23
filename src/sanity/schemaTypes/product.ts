@@ -54,7 +54,15 @@ export const product = defineType({
       name: "inStock",
       title: "В наличии",
       type: "boolean",
+      description: "Если снять — товар остаётся на сайте, но с пометкой «Под заказ».",
       initialValue: true,
+    }),
+    defineField({
+      name: "hidden",
+      title: "Скрыт с сайта",
+      type: "boolean",
+      description: "Если включить — товар полностью пропадает с сайта (каталог, категории), но остаётся в Sanity. Для товаров, временно выведенных из ассортимента (не для банального «нет в наличии» — для этого есть «В наличии»).",
+      initialValue: false,
     }),
     defineField({
       name: "description",
@@ -91,6 +99,9 @@ export const product = defineType({
     }),
   ],
   preview: {
-    select: { title: "title", subtitle: "article", media: "images.0" },
+    select: { title: "title", subtitle: "article", media: "images.0", hidden: "hidden" },
+    prepare({ title, subtitle, media, hidden }) {
+      return { title, subtitle: hidden ? `${subtitle} · скрыт с сайта` : subtitle, media };
+    },
   },
 });

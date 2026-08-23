@@ -1,7 +1,7 @@
 import { groq } from "next-sanity";
 
 export const PRODUCTS_BY_CATEGORY_QUERY = groq`
-  *[_type == "product" && category == $category] | order(title asc) {
+  *[_type == "product" && category == $category && hidden != true] | order(title asc) {
     _id,
     article,
     title,
