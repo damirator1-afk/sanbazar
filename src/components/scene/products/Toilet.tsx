@@ -1,51 +1,39 @@
-import { useMemo } from "react";
-import { Vector2 } from "three";
-import { ceramicMaterial, matteBlackMaterial, chromeMaterial } from "@/lib/materials";
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { Group, Mesh } from "three";
+
+// Настоящая 3D-модель унитаза (Tripo AI) вместо абстрактной сборки (стена +
+// кнопка смыва + чаша) — материал перекрашен в белоснежный глянцевый фарфор
+// в Blender (metalness=0, низкий roughness). Тот же пайплайн сжатия:
+// gltf-transform (упрощение + meshopt) + текстуры до 512px — было 56 МБ,
+// стало ~2.3 МБ.
+const MODEL_URL = "/models/toilet.glb";
 
 export default function Toilet() {
-  const bowlPoints = useMemo(
-    () =>
-      [
-        [0.015, 0],
-        [0.2, 0.015],
-        [0.26, 0.08],
-        [0.25, 0.17],
-        [0.19, 0.27],
-        [0.02, 0.3],
-      ].map(([x, y]) => new Vector2(x, y)),
-    []
-  );
+  const { scene } = useGLTF(MODEL_URL);
+  const groupRef = useRef<Group>(null);
+
+  useEffect(() => {
+    scene.traverse((obj) => {
+      if (obj instanceof Mesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.6;
+  });
 
   return (
-    <group>
-      {/* wall panel behind */}
-      <mesh position={[0, 0.55, -0.28]} castShadow receiveShadow>
-        <boxGeometry args={[0.9, 1.1, 0.08]} />
-        <meshStandardMaterial {...matteBlackMaterial} />
-      </mesh>
-      {/* flush plate */}
-      <mesh position={[0, 0.78, -0.235]} castShadow>
-        <boxGeometry args={[0.22, 0.3, 0.02]} />
-        <meshStandardMaterial {...chromeMaterial} />
-      </mesh>
-      <mesh position={[-0.05, 0.78, -0.222]}>
-        <cylinderGeometry args={[0.025, 0.025, 0.008, 24]} />
-        <meshStandardMaterial {...chromeMaterial} />
-      </mesh>
-      <mesh position={[0.05, 0.78, -0.222]}>
-        <cylinderGeometry args={[0.025, 0.025, 0.008, 24]} />
-        <meshStandardMaterial {...chromeMaterial} />
-      </mesh>
-      {/* bowl, revolved profile */}
-      <mesh position={[0, 0.1, 0.06]} rotation={[0, 0, 0]} castShadow receiveShadow>
-        <latheGeometry args={[bowlPoints, 40]} />
-        <meshStandardMaterial {...ceramicMaterial} />
-      </mesh>
-      {/* seat rim accent */}
-      <mesh position={[0, 0.4, 0.06]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.19, 0.014, 12, 48]} />
-        <meshStandardMaterial {...ceramicMaterial} />
-      </mesh>
+    <group ref={groupRef} scale={1.65} position={[0, 0, 0]}>
+      <primitive object={scene} />
     </group>
   );
 }
+
+useGLTF.preload(MODEL_URL);
