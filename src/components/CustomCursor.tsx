@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
+
+const CURSOR_SIZE = 34;
+const CURSOR_SIZE_ACTIVE = 46;
 
 /**
- * Custom cursor: a small blue dot inside a thin ring. The ring eases
- * toward the pointer and, when hovering anything tagged
- * data-cursor-magnetic, gets pulled toward that element's center and
- * grows — a lightweight magnetic-button feel without a physics lib.
+ * Custom cursor: the SanBazar droplet logo, tip pointing up-left like a
+ * normal pointer. logo-icon.png is cropped tight — its peak touches the
+ * very top edge, centered horizontally — so that point (top-center of the
+ * image) is what tracks the real pointer position. Eases toward the
+ * pointer and, when hovering anything tagged data-cursor-magnetic, gets
+ * pulled toward that element's center and grows.
  */
 export default function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const isFine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -20,17 +25,15 @@ export default function CustomCursor() {
 
     let pointerX = window.innerWidth / 2;
     let pointerY = window.innerHeight / 2;
-    let ringX = pointerX;
-    let ringY = pointerY;
+    let cursorX = pointerX;
+    let cursorY = pointerY;
+    let scale = 1;
     let magnetTarget: { x: number; y: number } | null = null;
     let active = false;
 
     const onMove = (e: MouseEvent) => {
       pointerX = e.clientX;
       pointerY = e.clientY;
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate(${pointerX}px, ${pointerY}px) translate(-50%, -50%)`;
-      }
     };
 
     const findMagnetic = (target: EventTarget | null): HTMLElement | null => {
@@ -44,11 +47,9 @@ export default function CustomCursor() {
         const rect = el.getBoundingClientRect();
         magnetTarget = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
         active = true;
-        ringRef.current?.classList.add("cursor-ring--active");
       } else {
         magnetTarget = null;
         active = false;
-        ringRef.current?.classList.remove("cursor-ring--active");
       }
     };
 
@@ -56,10 +57,12 @@ export default function CustomCursor() {
     const animate = () => {
       const toX = magnetTarget ? pointerX + (magnetTarget.x - pointerX) * 0.5 : pointerX;
       const toY = magnetTarget ? pointerY + (magnetTarget.y - pointerY) * 0.5 : pointerY;
-      ringX += (toX - ringX) * (active ? 0.22 : 0.18);
-      ringY += (toY - ringY) * (active ? 0.22 : 0.18);
-      if (ringRef.current) {
-        ringRef.current.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
+      cursorX += (toX - cursorX) * (active ? 0.28 : 0.22);
+      cursorY += (toY - cursorY) * (active ? 0.28 : 0.22);
+      scale += ((active ? CURSOR_SIZE_ACTIVE / CURSOR_SIZE : 1) - scale) * 0.25;
+      if (cursorRef.current) {
+        // top-center of the image (the droplet's tip) is the hotspot
+        cursorRef.current.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, 0%) scale(${scale})`;
       }
       raf = requestAnimationFrame(animate);
     };
@@ -77,17 +80,20 @@ export default function CustomCursor() {
   }, []);
 
   return (
-    <>
-      <div
-        ref={dotRef}
-        aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[90] h-1.5 w-1.5 rounded-full bg-brand-blue opacity-0 [.has-custom-cursor_&]:opacity-100"
+    <div
+      ref={cursorRef}
+      aria-hidden
+      className="pointer-events-none fixed left-0 top-0 z-[90] origin-top opacity-0 [.has-custom-cursor_&]:opacity-100"
+      style={{ width: CURSOR_SIZE, height: CURSOR_SIZE }}
+    >
+      <Image
+        src="/logo-icon.png"
+        alt=""
+        fill
+        sizes={`${CURSOR_SIZE_ACTIVE}px`}
+        className="object-contain drop-shadow-[0_0_10px_rgba(30,111,230,0.5)]"
+        priority
       />
-      <div
-        ref={ringRef}
-        aria-hidden
-        className="cursor-ring pointer-events-none fixed left-0 top-0 z-[90] h-8 w-8 rounded-full border border-brand-blue/50 opacity-0 transition-[width,height,border-color,background-color] duration-300 ease-out [.has-custom-cursor_&]:opacity-100"
-      />
-    </>
+    </div>
   );
 }

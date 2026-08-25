@@ -98,10 +98,3 @@ body.has-custom-cursor * {
 .input-base::placeholder {
   color: var(--color-brand-muted);
 }
-
-.cursor-ring--active {
-  width: 3.75rem !important;
-  height: 3.75rem !important;
-  background: rgba(30, 111, 230, 0.12);
-  border-color: rgba(30, 111, 230, 0.9) !important;
-}
