@@ -9,7 +9,7 @@ export const PRODUCT_CATEGORIES = [
   { key: "shower", title: "Душевые системы" },
   { key: "installation", title: "Инсталляции" },
   { key: "siphon", title: "Сифоны" },
-  { key: "accessories", title: "Аксессуары" },
+  { key: "accessories", title: "Комплектующие" },
 ] as const;
 
 export const product = defineType({

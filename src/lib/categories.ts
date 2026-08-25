@@ -27,7 +27,7 @@ const RAW: { key: ModelKey; title: string; tagline: string }[] = [
   { key: "shower", title: "Душевые системы", tagline: "Комфорт в каждой детали." },
   { key: "installation", title: "Инсталляции", tagline: "Надежность и технологии." },
   { key: "siphon", title: "Сифоны", tagline: "Качество в мелочах." },
-  { key: "accessories", title: "Аксессуары", tagline: "Завершающие штрихи." },
+  { key: "accessories", title: "Комплектующие", tagline: "Надежность в каждом соединении." },
 ];
 
 // gentle alternating left/right weave down the -Z corridor
