@@ -3,16 +3,17 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 
-const CURSOR_SIZE = 34;
-const CURSOR_SIZE_ACTIVE = 46;
+// cursor-droplet.png is just the drop+faucet mark (white disc background
+// removed, see below) cropped tight to its silhouette — its peak sits at
+// ~50%/1% of the image, so top-center is the hotspot. Aspect ratio 332:470.
+const CURSOR_WIDTH = 30;
+const CURSOR_HEIGHT = Math.round((CURSOR_WIDTH * 470) / 332);
+const ACTIVE_SCALE = 1.35;
 
 /**
- * Custom cursor: the SanBazar droplet logo, tip pointing up-left like a
- * normal pointer. logo-icon.png is cropped tight — its peak touches the
- * very top edge, centered horizontally — so that point (top-center of the
- * image) is what tracks the real pointer position. Eases toward the
- * pointer and, when hovering anything tagged data-cursor-magnetic, gets
- * pulled toward that element's center and grows.
+ * Custom cursor: the SanBazar droplet logo, tip pointing up like a normal
+ * pointer. Eases toward the pointer and, when hovering anything tagged
+ * data-cursor-magnetic, gets pulled toward that element's center and grows.
  */
 export default function CustomCursor() {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -59,7 +60,7 @@ export default function CustomCursor() {
       const toY = magnetTarget ? pointerY + (magnetTarget.y - pointerY) * 0.5 : pointerY;
       cursorX += (toX - cursorX) * (active ? 0.28 : 0.22);
       cursorY += (toY - cursorY) * (active ? 0.28 : 0.22);
-      scale += ((active ? CURSOR_SIZE_ACTIVE / CURSOR_SIZE : 1) - scale) * 0.25;
+      scale += ((active ? ACTIVE_SCALE : 1) - scale) * 0.25;
       if (cursorRef.current) {
         // top-center of the image (the droplet's tip) is the hotspot
         cursorRef.current.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, 0%) scale(${scale})`;
@@ -84,13 +85,13 @@ export default function CustomCursor() {
       ref={cursorRef}
       aria-hidden
       className="pointer-events-none fixed left-0 top-0 z-[90] origin-top opacity-0 [.has-custom-cursor_&]:opacity-100"
-      style={{ width: CURSOR_SIZE, height: CURSOR_SIZE }}
+      style={{ width: CURSOR_WIDTH, height: CURSOR_HEIGHT }}
     >
       <Image
-        src="/logo-icon.png"
+        src="/cursor-droplet.png"
         alt=""
         fill
-        sizes={`${CURSOR_SIZE_ACTIVE}px`}
+        sizes={`${CURSOR_WIDTH}px`}
         className="object-contain drop-shadow-[0_0_10px_rgba(30,111,230,0.5)]"
         priority
       />
