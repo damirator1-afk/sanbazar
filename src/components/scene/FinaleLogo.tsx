@@ -2,14 +2,16 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html, useTexture } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import {
   InstancedMesh,
   Mesh,
+  MeshStandardMaterial,
   Object3D,
   Vector3,
   Quaternion,
   MeshBasicMaterial,
+  Group,
 } from "three";
 import { CATEGORIES, FINALE_Z, TOTAL_STEPS } from "@/lib/categories";
 import { scrollProgress } from "@/lib/scrollProgress";
@@ -20,6 +22,13 @@ const FINALE_CENTER = new Vector3(0, 2.05, FINALE_Z);
 // not a 0..1 fraction — this threshold lives in that same step-space
 const FINALE_START_STEP = TOTAL_STEPS - 1.85;
 
+const LOGO_MODEL_URL = "/models/logo.glb";
+const LOGO_SCALE = 2.3;
+// the model's local origin sits at the drop's bottom, not its center
+// (bbox y: 0..0.98) -- shift down by half that (scaled) so it centers on
+// FINALE_CENTER the same way the old plane image did
+const LOGO_Y_OFFSET = -0.49 * LOGO_SCALE;
+
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
@@ -28,9 +37,22 @@ function smoothstep(edge0: number, edge1: number, x: number) {
 export default function FinaleLogo() {
   const meshRef = useRef<InstancedMesh>(null);
   const groupVisible = useRef(false);
-  const logoRef = useRef<Mesh>(null);
+  const logoRef = useRef<Group>(null);
   const labelRef = useRef<HTMLDivElement>(null);
-  const texture = useTexture("/logo-medallion-circle.png");
+  const { scene: logoScene } = useGLTF(LOGO_MODEL_URL);
+  const logoMaterials = useMemo(() => {
+    const materials: MeshStandardMaterial[] = [];
+    logoScene.traverse((obj) => {
+      if (obj instanceof Mesh && obj.material instanceof MeshStandardMaterial) {
+        obj.material.transparent = true;
+        obj.material.opacity = 0;
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        materials.push(obj.material);
+      }
+    });
+    return materials;
+  }, [logoScene]);
 
   const dummy = useMemo(() => new Object3D(), []);
   const upAxis = useMemo(() => new Vector3(0, 1, 0), []);
@@ -67,7 +89,7 @@ export default function FinaleLogo() {
     return { starts, ends, phases };
   });
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const raw = scrollProgress.cameraStep;
     const t = smoothstep(FINALE_START_STEP, TOTAL_STEPS, raw);
 
@@ -115,8 +137,9 @@ export default function FinaleLogo() {
     }
 
     const logoOpacity = smoothstep(0.68, 1, t);
-    if (logoRef.current) {
-      (logoRef.current.material as MeshBasicMaterial).opacity = logoOpacity;
+    for (const mat of logoMaterials) mat.opacity = logoOpacity;
+    if (logoRef.current && logoOpacity > 0.001) {
+      logoRef.current.rotation.y += delta * 0.25;
     }
     if (labelRef.current) {
       const lo = smoothstep(0.8, 1, t);
@@ -132,13 +155,13 @@ export default function FinaleLogo() {
         <meshBasicMaterial color="#6fa8ff" transparent opacity={0} toneMapped={false} />
       </instancedMesh>
 
-      <mesh
+      <group
         ref={logoRef}
-        position={[FINALE_CENTER.x, FINALE_CENTER.y, FINALE_CENTER.z + 0.03]}
+        position={[FINALE_CENTER.x, FINALE_CENTER.y + LOGO_Y_OFFSET, FINALE_CENTER.z + 0.03]}
+        scale={LOGO_SCALE}
       >
-        <planeGeometry args={[2.5, 2.5]} />
-        <meshBasicMaterial map={texture} transparent opacity={0} toneMapped={false} />
-      </mesh>
+        <primitive object={logoScene} />
+      </group>
 
       <pointLight
         position={[FINALE_CENTER.x, FINALE_CENTER.y, FINALE_CENTER.z + 1]}
@@ -167,3 +190,5 @@ export default function FinaleLogo() {
     </group>
   );
 }
+
+useGLTF.preload(LOGO_MODEL_URL);
