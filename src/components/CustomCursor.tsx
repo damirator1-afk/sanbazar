@@ -10,8 +10,10 @@ const CURSOR_WIDTH = 30;
 const CURSOR_HEIGHT = Math.round((CURSOR_WIDTH * 470) / 332);
 const ACTIVE_SCALE = 1.35;
 // tilt like a standard arrow cursor: tip stays put, body leans to the
-// lower-right (rotation happens around the tip via the origin-top class)
-const TILT_DEG = 20;
+// lower-right (rotation happens around the tip via the origin-top class).
+// Negative because CSS rotate() is clockwise, and clockwise from
+// straight-down swings the body left, not right.
+const TILT_DEG = -20;
 
 /**
  * Custom cursor: the SanBazar droplet logo, tip pointing up like a normal
