@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import type { Product } from "@/sanity/lib/queries";
+import type { AnalogProduct, Product } from "@/sanity/lib/queries";
 import { useCart } from "@/components/CartProvider";
 import { getBrandLogo } from "@/lib/brandLogos";
 
@@ -15,6 +15,7 @@ interface ProductGridProps {
 }
 
 type SortOrder = "default" | "price-asc" | "price-desc";
+type ZoomTarget = Pick<Product, "id" | "title" | "imageUrl" | "modelUrl">;
 
 const priceFormatter = new Intl.NumberFormat("ru-RU");
 
@@ -26,16 +27,20 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
   const [brand, setBrand] = useState<string>("all");
   const [sort, setSort] = useState<SortOrder>("default");
-  const [zoomed, setZoomed] = useState<Product | null>(null);
+  const [zoomed, setZoomed] = useState<ZoomTarget | null>(null);
+  const [analogsOf, setAnalogsOf] = useState<Product | null>(null);
 
   useEffect(() => {
-    if (!zoomed) return;
+    if (!zoomed && !analogsOf) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setZoomed(null);
+      if (e.key === "Escape") {
+        setZoomed(null);
+        setAnalogsOf(null);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [zoomed]);
+  }, [zoomed, analogsOf]);
 
   const visible = useMemo(() => {
     let list = brand === "all" ? products : products.filter((p) => p.brand === brand);
@@ -155,6 +160,16 @@ export default function ProductGrid({ products }: ProductGridProps) {
                   </span>
                 </div>
                 <AddToCartButton product={p} />
+                {p.analogs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAnalogsOf(p)}
+                    data-cursor-magnetic
+                    className="font-mono-label mt-2 flex w-full items-center justify-center rounded-full border border-white/15 px-4 py-2.5 text-[11px] uppercase tracking-wide text-brand-muted transition-colors hover:border-brand-blue/50 hover:text-brand-ink"
+                  >
+                    Аналоги ({p.analogs.length})
+                  </button>
+                )}
               </div>
             </div>
           </article>
@@ -204,11 +219,96 @@ export default function ProductGrid({ products }: ProductGridProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {analogsOf && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-navy-deep/85 px-6 pt-[104px] pb-[76px] backdrop-blur-sm sm:px-12"
+            onClick={() => setAnalogsOf(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-4xl rounded-2xl border border-white/10 bg-brand-navy-deep/90 p-6 backdrop-blur-md sm:p-8"
+            >
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono-label text-[10px] uppercase text-brand-blue-light">Аналоги</p>
+                  <h3 className="font-display mt-1 text-xl font-semibold text-brand-ink">{analogsOf.title}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAnalogsOf(null)}
+                  className="font-mono-label shrink-0 rounded-full border border-white/15 bg-brand-navy-deep/70 px-4 py-2 text-[11px] uppercase text-brand-muted transition-colors hover:border-brand-blue/50 hover:text-brand-ink"
+                >
+                  Закрыть ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {analogsOf.analogs.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-brand-navy/50"
+                  >
+                    <div className="relative aspect-square w-full bg-white/5">
+                      {a.imageUrl ? (
+                        <div onClick={() => setZoomed(a)} className="absolute inset-0 cursor-zoom-in">
+                          <Image
+                            src={a.imageUrl}
+                            alt={a.title}
+                            fill
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            className="object-contain p-3"
+                          />
+                        </div>
+                      ) : a.modelUrl ? (
+                        <div
+                          onClick={() => setZoomed(a)}
+                          className="flex h-full w-full cursor-zoom-in items-center justify-center bg-gradient-to-br from-brand-blue/20 to-transparent"
+                        >
+                          <span className="font-mono-label text-[10px] text-brand-blue-light">СМОТРЕТЬ В 3D</span>
+                        </div>
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <span className="font-mono-label text-[10px] text-brand-muted">ФОТО СКОРО</span>
+                        </div>
+                      )}
+                      {!a.inStock && (
+                        <span className="font-mono-label absolute left-2 top-2 rounded-full bg-brand-navy-deep/80 px-2.5 py-1 text-[8px] text-brand-muted backdrop-blur-md">
+                          ПОД ЗАКАЗ
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-col p-4">
+                      {a.brand && (
+                        <span className="font-mono-label text-[9px] uppercase text-brand-blue-light">{a.brand}</span>
+                      )}
+                      <h4 className="font-display mt-1 text-[14px] font-semibold leading-snug text-brand-ink">
+                        {a.title}
+                      </h4>
+                      <div className="mt-auto pt-3">
+                        <span className="font-display text-base font-bold text-brand-ink">
+                          {priceFormatter.format(a.price)} ₸
+                        </span>
+                        <AddToCartButton product={a} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function AddToCartButton({ product }: { product: Product }) {
+function AddToCartButton({ product }: { product: Pick<Product | AnalogProduct, "id" | "article" | "title" | "price"> }) {
   const { addItem } = useCart();
   const [justAdded, setJustAdded] = useState(false);
 

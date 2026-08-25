@@ -97,6 +97,24 @@ export const product = defineType({
       type: "file",
       options: { accept: ".mp4,.mov" },
     }),
+    defineField({
+      name: "analogs",
+      title: "Аналоги",
+      description: "Заполнять только у ходовых товаров с прямыми аналогами других брендов (напр. K828 ↔ T828). Ссылку нужно проставить с обеих сторон — она не подставляется автоматически.",
+      type: "array",
+      of: [
+        {
+          type: "reference",
+          to: [{ type: "product" }],
+          options: {
+            filter: ({ document }) => ({
+              filter: "_id != $selfId",
+              params: { selfId: (document._id as string).replace(/^drafts\./, "") },
+            }),
+          },
+        },
+      ],
+    }),
   ],
   preview: {
     select: { title: "title", subtitle: "article", media: "images.0", hidden: "hidden" },

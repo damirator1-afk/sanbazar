@@ -49,6 +49,18 @@ async function getProducts(categoryKey: string): Promise<Product[]> {
     // даже с fit("max"); нам нужно фото целиком, без обрезки
     imageUrl: p.images?.[0] ? urlFor(p.images[0]).width(700).fit("max").url() : null,
     modelUrl: p.modelUrl,
+    analogs: (p.analogs ?? [])
+      .filter((a) => !a.hidden)
+      .map((a) => ({
+        id: a._id,
+        article: a.article,
+        title: a.title,
+        brand: a.brand,
+        price: a.price,
+        inStock: a.inStock,
+        imageUrl: a.images?.[0] ? urlFor(a.images[0]).width(700).fit("max").url() : null,
+        modelUrl: a.modelUrl,
+      })),
   }));
 }
 
