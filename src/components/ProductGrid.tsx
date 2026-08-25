@@ -167,7 +167,7 @@ export default function ProductGrid({ products }: ProductGridProps) {
                     data-cursor-magnetic
                     className="font-mono-label mt-2 flex w-full items-center justify-center rounded-full border border-white/15 px-4 py-2.5 text-[11px] uppercase tracking-wide text-brand-muted transition-colors hover:border-brand-blue/50 hover:text-brand-ink"
                   >
-                    Аналоги ({p.analogs.length})
+                    Показать аналоги ({p.analogs.length})
                   </button>
                 )}
               </div>
