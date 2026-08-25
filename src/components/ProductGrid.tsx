@@ -249,12 +249,17 @@ export default function ProductGrid({ products }: ProductGridProps) {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {analogsOf.analogs.map((a) => (
+                {[analogsOf, ...analogsOf.analogs].map((a) => (
                   <div
                     key={a.id}
                     className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-brand-navy/50"
                   >
                     <div className="relative aspect-square w-full bg-white/5">
+                      {a.id === analogsOf.id && (
+                        <span className="font-mono-label absolute left-2 top-2 z-10 rounded-full bg-brand-blue/90 px-2.5 py-1 text-[8px] text-white backdrop-blur-md">
+                          ТЕКУЩИЙ
+                        </span>
+                      )}
                       {a.imageUrl ? (
                         <div onClick={() => setZoomed(a)} className="absolute inset-0 cursor-zoom-in">
                           <Image
@@ -278,7 +283,7 @@ export default function ProductGrid({ products }: ProductGridProps) {
                         </div>
                       )}
                       {!a.inStock && (
-                        <span className="font-mono-label absolute left-2 top-2 rounded-full bg-brand-navy-deep/80 px-2.5 py-1 text-[8px] text-brand-muted backdrop-blur-md">
+                        <span className="font-mono-label absolute right-2 top-2 rounded-full bg-brand-navy-deep/80 px-2.5 py-1 text-[8px] text-brand-muted backdrop-blur-md">
                           ПОД ЗАКАЗ
                         </span>
                       )}
