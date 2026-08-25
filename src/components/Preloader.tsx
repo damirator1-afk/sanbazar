@@ -68,10 +68,10 @@ export default function Preloader({ onDone }: PreloaderProps) {
           }`}
         >
           <Image
-            src="/logo-icon.png"
+            src="/preloader-logo.png"
             alt=""
-            width={192}
-            height={192}
+            width={244}
+            height={388}
             priority
             className="h-full w-full object-contain"
           />
