@@ -28,6 +28,7 @@ loadEnv({ path: path.resolve(__dirname, "..", ".env.local") });
 const CATALOG_DIR = path.resolve(__dirname, "..", "..", "каталог");
 const TEMPLATE_PATH = path.join(CATALOG_DIR, "шаблон_каталога.xlsx");
 const PHOTOS_DIR = path.join(CATALOG_DIR, "фото");
+const MODELS_DIR = path.join(CATALOG_DIR, "3D");
 
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MODEL_EXTENSIONS = [".glb", ".gltf"];
@@ -184,12 +185,12 @@ function findPhotos(article: string): string[] {
 }
 
 function findModel(article: string): string | null {
-  if (!existsSync(PHOTOS_DIR)) return null;
-  const files = readdirSync(PHOTOS_DIR);
+  if (!existsSync(MODELS_DIR)) return null;
+  const files = readdirSync(MODELS_DIR);
   const escaped = article.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`^${escaped}\\.(${MODEL_EXTENSIONS.map((e) => e.slice(1)).join("|")})$`, "i");
   const match = files.find((f) => re.test(f));
-  return match ? path.join(PHOTOS_DIR, match) : null;
+  return match ? path.join(MODELS_DIR, match) : null;
 }
 
 async function uploadModel(filePath: string) {
