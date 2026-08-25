@@ -36,14 +36,19 @@ export default function ModelViewer({ url }: ModelViewerProps) {
   const [autoRotate, setAutoRotate] = useState(true);
 
   return (
-    <Canvas camera={{ position: [2.5, 1.8, 2.5], fov: 40 }} dpr={[1, 2]}>
+    <Canvas camera={{ position: [2.5, 1.8, 2.5], fov: 40, near: 0.01, far: 100 }} dpr={[1, 2]}>
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 6, 4]} intensity={1.6} />
       <directionalLight position={[-4, 2, -3]} intensity={0.6} />
       <Suspense fallback={<Loader />}>
         {/* без observe: c ним <Bounds> периодически пересчитывает и сам
-            подруливает камеру поверх OrbitControls — тоже давало рывки */}
-        <Bounds fit clip margin={1.2}>
+            подруливает камеру поверх OrbitControls — тоже давало рывки.
+            без clip: оно один раз подгоняет near/far под дистанцию камеры
+            на момент загрузки, а после ручного зума (enableZoom) камера
+            может оказаться ближе/дальше этих зафиксированных плоскостей —
+            часть модели обрезается, выглядит как рывок. Статичные near/far
+            на Canvas с запасом работают для любого размера модели. */}
+        <Bounds fit margin={1.2}>
           <Model url={url} />
         </Bounds>
       </Suspense>
