@@ -79,7 +79,7 @@ export default function Preloader({ onDone }: PreloaderProps) {
 
         <div className="h-px w-full overflow-hidden bg-white/10">
           <div
-            className="h-full bg-brand-blue shadow-[0_0_10px_rgba(226,153,63,0.8)] transition-[width] duration-150"
+            className="h-full bg-brand-blue shadow-[0_0_10px_rgba(30,111,230,0.8)] transition-[width] duration-150"
             style={{ width: `${percent}%` }}
           />
         </div>

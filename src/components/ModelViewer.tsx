@@ -18,7 +18,7 @@ function Loader() {
   return (
     <mesh>
       <boxGeometry args={[0.4, 0.4, 0.4]} />
-      <meshStandardMaterial color="#e2993f" wireframe />
+      <meshStandardMaterial color="#1e6fe6" wireframe />
     </mesh>
   );
 }

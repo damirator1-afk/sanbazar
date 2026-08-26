@@ -31,28 +31,28 @@ export default function SceneCanvas() {
         gl={{ antialias: true, powerPreference: "high-performance", toneMappingExposure: 1.75 }}
         camera={{ position: [0, 2.5, 6], fov: 45, near: 0.1, far: 220 }}
       >
-        <color attach="background" args={["#0a0704"]} />
-        <fogExp2 attach="fog" args={["#0c0704", 0.011]} />
+        <color attach="background" args={["#050b12"]} />
+        <fogExp2 attach="fog" args={["#060d16", 0.011]} />
 
-        <ambientLight intensity={1.05} color="#e8d3ab" />
+        <ambientLight intensity={1.05} color="#c3d0ff" />
         <directionalLight
           position={[6, 10, 4]}
           intensity={1.45}
-          color="#fff1dc"
+          color="#f0f4ff"
           castShadow={heavyFx}
           shadow-mapSize={[512, 512]}
         />
-        <pointLight position={[0, 6, -4]} intensity={16} color="#e2993f" distance={24} />
+        <pointLight position={[0, 6, -4]} intensity={16} color="#1e6fe6" distance={24} />
         {/* metals with metalness≈1 have almost no diffuse response — without
             something to reflect they read as flat black under point lights.
             Built from local Lightformer panels (no network HDR fetch) so
             there's nothing async to race against on mount/resize. */}
         <Hdri resolution={heavyFx ? 256 : 128} background={false}>
-          <Lightformer intensity={3.5} color="#f2c98a" position={[0, 6, -2]} scale={[12, 6, 1]} />
-          <Lightformer intensity={2.4} color="#fff6ea" position={[-6, 3, 5]} scale={[6, 5, 1]} />
+          <Lightformer intensity={3.5} color="#c3d3ff" position={[0, 6, -2]} scale={[12, 6, 1]} />
+          <Lightformer intensity={2.4} color="#ffffff" position={[-6, 3, 5]} scale={[6, 5, 1]} />
           <Lightformer
             intensity={2.8}
-            color="#f2b569"
+            color="#4a92ff"
             position={[6, 2, 5]}
             rotation={[0, Math.PI / 3, 0]}
             scale={[6, 5, 1]}

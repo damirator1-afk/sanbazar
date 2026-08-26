@@ -1,17 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  /* warm showroom palette -- amber/gold accent instead of blue, dark
-     warm-neutral backgrounds instead of navy. The logo itself stays blue
-     (it's the water mark) and isn't driven by these tokens -- it's baked
-     into the cursor/logo image and 3D assets directly. */
-  --color-brand-blue: #e2993f;
-  --color-brand-blue-light: #f2b569;
-  --color-brand-navy: #171009;
-  --color-brand-navy-deep: #0b0703;
-  --color-brand-chrome: #ddcfb8;
-  --color-brand-ink: #f5f0e6;
-  --color-brand-muted: #a89a86;
+  --color-brand-blue: #1e6fe6;
+  --color-brand-blue-light: #4a92ff;
+  --color-brand-navy: #0b1422;
+  --color-brand-navy-deep: #060b13;
+  --color-brand-chrome: #c7d2e5;
+  --color-brand-ink: #f2f4f7;
+  --color-brand-muted: #8f9bb3;
 }
 
 @theme inline {
@@ -81,7 +77,7 @@ body.has-custom-cursor * {
   background: var(--color-brand-navy-deep);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2b2013;
+  background: #1a2740;
   border: 2px solid var(--color-brand-navy-deep);
   border-radius: 999px;
 }
@@ -89,7 +85,7 @@ body.has-custom-cursor * {
 .input-base {
   border-radius: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(23, 16, 9, 0.6);
+  background: rgba(11, 20, 34, 0.6);
   padding: 0.65rem 0.9rem;
   font-size: 14px;
   color: var(--color-brand-ink);
@@ -97,7 +93,7 @@ body.has-custom-cursor * {
   transition: border-color 0.2s ease;
 }
 .input-base:focus {
-  border-color: rgba(226, 153, 63, 0.6);
+  border-color: rgba(30, 111, 230, 0.6);
 }
 .input-base::placeholder {
   color: var(--color-brand-muted);
