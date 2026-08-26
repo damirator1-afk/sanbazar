@@ -105,7 +105,10 @@ export default function CustomCursor() {
         // washes into the surrounding blue once downscaled that far
         sizes="120px"
         quality={90}
-        className="object-contain drop-shadow-[0_0_10px_rgba(30,111,230,0.5)]"
+        // a 10px blur was disproportionate at this icon's actual ~42px
+        // size -- the tinted blue haze bled onto the artwork's own white
+        // swirl stroke near the silhouette edge, making it read blue
+        className="object-contain drop-shadow-[0_0_3px_rgba(30,111,230,0.45)]"
         priority
       />
     </div>
