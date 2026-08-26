@@ -128,7 +128,7 @@ export default function AdminUploadPage() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(60% 55% at 82% 20%, rgba(30,111,230,0.14), transparent 70%), linear-gradient(155deg, #081b17 0%, #050b12 55%, #030709 100%)",
+              "radial-gradient(60% 55% at 82% 20%, rgba(226,153,63,0.14), transparent 70%), linear-gradient(155deg, #1a1108 0%, #120b05 55%, #030201 100%)",
           }}
           aria-hidden
         />
