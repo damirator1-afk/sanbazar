@@ -96,7 +96,12 @@ export default function CustomCursor() {
         src="/cursor-droplet.png"
         alt=""
         fill
-        sizes={`${CURSOR_WIDTH}px`}
+        // requesting well past the visual box (~30-40px, incl. the hover
+        // grow) on purpose: at DPR 1 Next would otherwise serve a source
+        // this small, and the thin white swirl stroke in the artwork
+        // washes into the surrounding blue once downscaled that far
+        sizes="120px"
+        quality={90}
         className="object-contain drop-shadow-[0_0_10px_rgba(30,111,230,0.5)]"
         priority
       />
