@@ -4,7 +4,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Preloader from "@/components/Preloader";
 import IntroSplash from "@/components/IntroSplash";
-import CustomCursor from "@/components/CustomCursor";
 import Header from "@/components/Header";
 import HeroPanel from "@/components/HeroPanel";
 import ActiveCategoryLabel from "@/components/ActiveCategoryLabel";
@@ -54,7 +53,6 @@ export default function Home() {
         />
       )}
 
-      <CustomCursor />
       <Header />
       <SceneCanvas />
       {/* the 3D camera can put bright product/pedestal geometry anywhere

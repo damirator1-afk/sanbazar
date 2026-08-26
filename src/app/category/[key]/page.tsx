@@ -7,7 +7,6 @@ import { urlFor } from "@/sanity/lib/image";
 import { PRODUCTS_BY_CATEGORY_QUERY, type Product, type RawProduct } from "@/sanity/lib/queries";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import CustomCursor from "@/components/CustomCursor";
 import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
 
@@ -74,7 +73,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <>
-      <CustomCursor />
       <Header centerText={category.title.toUpperCase()} />
 
       <main className="relative min-h-screen overflow-hidden px-6 pb-24 pt-[110px] sm:px-10">
