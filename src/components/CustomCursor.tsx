@@ -6,7 +6,10 @@ import Image from "next/image";
 // cursor-droplet.png is just the drop+faucet mark (white disc background
 // removed, see below) cropped tight to its silhouette — its peak sits at
 // ~50%/1% of the image, so top-center is the hotspot. Aspect ratio 332:470.
-const CURSOR_WIDTH = 30;
+// at 30px the thin white swirl stroke in the artwork was only ~1px wide
+// after downscaling and washed into the neighbouring blue -- 42px gives
+// it enough physical pixels to read as white
+const CURSOR_WIDTH = 42;
 const CURSOR_HEIGHT = Math.round((CURSOR_WIDTH * 470) / 332);
 const ACTIVE_SCALE = 1.35;
 // tilt like a standard arrow cursor: tip stays put, body leans to the
