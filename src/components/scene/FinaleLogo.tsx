@@ -16,17 +16,21 @@ import { CATEGORIES, FINALE_Z, TOTAL_STEPS } from "@/lib/categories";
 import { scrollProgress } from "@/lib/scrollProgress";
 
 const PARTICLE_COUNT = 220;
-const FINALE_CENTER = new Vector3(0, 2.05, FINALE_Z);
+// up near the ceiling (wall/ceiling line sits around y=8.5) with a bit
+// of headroom, rather than mid-wall
+const FINALE_CENTER = new Vector3(0, 6, FINALE_Z);
 // scrollProgress.cameraStep is a continuous step index (0..TOTAL_STEPS),
 // not a 0..1 fraction — this threshold lives in that same step-space
 const FINALE_START_STEP = TOTAL_STEPS - 1.85;
 
 const LOGO_MODEL_URL = "/models/logo.glb";
-const LOGO_SCALE = 2.3;
+const LOGO_SCALE = 2.3 * 1.5;
 // the model's local origin sits at the drop's bottom, not its center
 // (bbox y: 0..0.98) -- shift down by half that (scaled) so it centers on
 // FINALE_CENTER the same way the old plane image did
 const LOGO_Y_OFFSET = -0.49 * LOGO_SCALE;
+// label sits below the logo -- half the logo's height (above) plus a gap
+const LABEL_Y_OFFSET = -(0.49 * LOGO_SCALE + 0.5);
 
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
@@ -37,7 +41,6 @@ export default function FinaleLogo() {
   const meshRef = useRef<InstancedMesh>(null);
   const groupVisible = useRef(false);
   const logoRef = useRef<Group>(null);
-  const labelRef = useRef<HTMLDivElement>(null);
   const { scene: logoScene } = useGLTF(LOGO_MODEL_URL);
   useMemo(() => {
     logoScene.traverse((obj) => {
@@ -135,11 +138,6 @@ export default function FinaleLogo() {
     if (logoRef.current) {
       logoRef.current.rotation.y += delta * 0.25;
     }
-    if (labelRef.current) {
-      const lo = smoothstep(0.8, 1, t);
-      labelRef.current.style.opacity = String(lo);
-      labelRef.current.style.transform = `translateY(${(1 - lo) * 16}px)`;
-    }
   });
 
   return (
@@ -165,11 +163,11 @@ export default function FinaleLogo() {
       />
 
       <Html
-        position={[FINALE_CENTER.x, FINALE_CENTER.y - 1.55, FINALE_CENTER.z]}
+        position={[FINALE_CENTER.x, FINALE_CENTER.y + LABEL_Y_OFFSET, FINALE_CENTER.z]}
         center
         style={{ pointerEvents: "none" }}
       >
-        <div ref={labelRef} className="flex flex-col items-center text-center opacity-0">
+        <div className="flex flex-col items-center text-center">
           <span className="font-display text-3xl font-extrabold tracking-wide text-brand-ink sm:text-4xl">
             SANBAZAR
           </span>
