@@ -1,24 +1,37 @@
-import { matteBlackMaterial, chromeMaterial, ceramicMaterial } from "@/lib/materials";
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { Group, Mesh } from "three";
+
+// Настоящая 3D-модель инсталляции (Tripo AI) вместо абстрактной сборки
+// (плита + кнопка) — тот же пайплайн сжатия: gltf-transform (упрощение +
+// meshopt), было 55 МБ, стало ~2.6 МБ.
+const MODEL_URL = "/models/installation.glb";
 
 export default function Installation() {
+  const { scene } = useGLTF(MODEL_URL);
+  const groupRef = useRef<Group>(null);
+
+  useEffect(() => {
+    scene.traverse((obj) => {
+      if (obj instanceof Mesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.6;
+  });
+
   return (
-    <group>
-      <mesh position={[0, 0.65, -0.05]} castShadow receiveShadow>
-        <boxGeometry args={[0.85, 1.3, 0.15]} />
-        <meshStandardMaterial {...matteBlackMaterial} />
-      </mesh>
-      <mesh position={[0, 0.78, 0.035]} castShadow>
-        <boxGeometry args={[0.3, 0.42, 0.02]} />
-        <meshStandardMaterial {...ceramicMaterial} />
-      </mesh>
-      <mesh position={[-0.06, 0.85, 0.05]} castShadow>
-        <cylinderGeometry args={[0.045, 0.045, 0.012, 32]} />
-        <meshStandardMaterial {...chromeMaterial} />
-      </mesh>
-      <mesh position={[0.06, 0.85, 0.05]} castShadow>
-        <cylinderGeometry args={[0.03, 0.03, 0.012, 32]} />
-        <meshStandardMaterial {...chromeMaterial} />
-      </mesh>
+    <group ref={groupRef} scale={1.65} position={[0, 0, 0]}>
+      <primitive object={scene} />
     </group>
   );
 }
+
+useGLTF.preload(MODEL_URL);
