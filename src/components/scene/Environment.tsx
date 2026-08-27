@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { InstancedMesh, Object3D } from "three";
+import { AdditiveBlending, CanvasTexture, InstancedMesh, Object3D } from "three";
 import { FINALE_Z } from "@/lib/categories";
 
 const SLAT_WIDTH = 0.12;
@@ -42,17 +42,38 @@ function WoodSlats({ x, slotCount, startZ }: { x: number; slotCount: number; sta
   );
 }
 
-const STRIP_THICKNESS = 0.08;
-const STRIP_TOP_Y = 8.3;
-const STRIP_BOTTOM_Y = 0.08;
-// plain white light, not a colored accent -- matches the existing
-// directional/fill lighting already in the scene rather than adding a
-// tinted amber glow
-const STRIP_COLOR = "#ffffff";
+const STRIP_GLOW_HEIGHT = 1.4;
+const STRIP_TOP_Y = 8.1;
+const STRIP_BOTTOM_Y = 0.5;
 
-/** Rim-light strips along the top and bottom edge of each *plain wall*
+// a soft vertical falloff (transparent -> bright core -> transparent)
+// instead of a flat-color plane -- additive-blended, so it reads as
+// light bleeding onto the wall rather than a painted stripe
+function useGlowTexture() {
+  return useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 8;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "rgba(255,255,255,0)");
+    gradient.addColorStop(0.38, "rgba(255,255,255,0.3)");
+    gradient.addColorStop(0.5, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.62, "rgba(255,255,255,0.3)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const texture = new CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
+}
+
+/** Rim-light glow along the top and bottom edge of each *plain wall*
  * block only — the slat blocks stay without them, per reference. */
 function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number; floorLength: number }) {
+  const glowTexture = useGlowTexture();
   const floorEnd = startZ + floorLength;
   const cycles = Math.ceil(floorLength / BLOCK_CYCLE) + 1;
   const segments: { z: number; length: number }[] = [];
@@ -71,12 +92,24 @@ function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number
       {segments.map((s, i) => (
         <group key={i}>
           <mesh position={[x - Math.sign(x) * 0.015, STRIP_TOP_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
-            <planeGeometry args={[s.length, STRIP_THICKNESS]} />
-            <meshBasicMaterial color={STRIP_COLOR} toneMapped={false} />
+            <planeGeometry args={[s.length, STRIP_GLOW_HEIGHT]} />
+            <meshBasicMaterial
+              map={glowTexture}
+              transparent
+              blending={AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
           </mesh>
           <mesh position={[x - Math.sign(x) * 0.015, STRIP_BOTTOM_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
-            <planeGeometry args={[s.length, STRIP_THICKNESS]} />
-            <meshBasicMaterial color={STRIP_COLOR} toneMapped={false} />
+            <planeGeometry args={[s.length, STRIP_GLOW_HEIGHT]} />
+            <meshBasicMaterial
+              map={glowTexture}
+              transparent
+              blending={AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
           </mesh>
         </group>
       ))}
