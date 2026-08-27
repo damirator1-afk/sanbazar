@@ -12,18 +12,43 @@ const HALO_RADIUS = BASE_RADIUS * 1.7;
 // the wall rim lights) -- the texture's alpha channel shapes *where*
 // the glow sits (a halo spilling onto the floor around the base), this
 // color multiplier is what makes it actually read as light, not a decal
-const HALO_HDR_COLOR = new Color(1, 1, 1).multiplyScalar(4);
-// products spin at rotation.y += delta * 0.6 -- the halo turns the
+const HALO_HDR_COLOR = new Color(1, 1, 1).multiplyScalar(3);
+const SWEEP_HDR_COLOR = new Color(1, 1, 1).multiplyScalar(5);
+// products spin at rotation.y += delta * 0.6 -- the sweep turns the
 // other way, slower, so the two motions read as distinct layers
 const HALO_SPIN_SPEED = 0.35;
 
-// radial falloff (transparent under the pedestal, soft peak near the
-// base edge, fading out by the rim), then carved into distinct dashes
-// around the circumference -- the previous attempt used subtle
-// brightness bumps on a continuous ring, which blurred (canvas gradient
-// + the scene's Bloom pass, twice) into something visually uniform, so
-// the spin never actually showed. Hard gaps survive that blur.
-function useHaloTexture() {
+// a plain, unbroken radial falloff -- transparent under the pedestal,
+// soft peak near the base edge, fading out by the rim. Stays solid;
+// this alone never rotates, so the halo always reads as one continuous
+// ring rather than a moving pattern.
+function useBaseHaloTexture() {
+  return useMemo(() => {
+    const size = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    const c = size / 2;
+    const gradient = ctx.createRadialGradient(c, c, size * 0.22, c, c, size * 0.5);
+    gradient.addColorStop(0, "rgba(255,255,255,0)");
+    gradient.addColorStop(0.55, "rgba(255,255,255,0.4)");
+    gradient.addColorStop(0.75, "rgba(255,255,255,0.18)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    const texture = new CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }, []);
+}
+
+// a single bright arc, same radial shape as the base but clipped to a
+// wedge -- this is the only part that spins, riding on top of the
+// always-solid base ring so the motion reads as a moving highlight
+// instead of chopping the whole halo into a dashed pattern
+function useSweepTexture() {
   return useMemo(() => {
     const size = 256;
     const canvas = document.createElement("canvas");
@@ -33,31 +58,21 @@ function useHaloTexture() {
     if (!ctx) return null;
     const c = size / 2;
 
-    const base = ctx.createRadialGradient(c, c, size * 0.22, c, c, size * 0.5);
-    base.addColorStop(0, "rgba(255,255,255,0)");
-    base.addColorStop(0.55, "rgba(255,255,255,0.4)");
-    base.addColorStop(0.75, "rgba(255,255,255,0.18)");
-    base.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, size, size);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(c, c);
+    ctx.arc(c, c, size, -Math.PI / 5, Math.PI / 5);
+    ctx.closePath();
+    ctx.clip();
 
-    // cut real gaps out of the ring -- destination-out erases alpha
-    // regardless of fill color, so this leaves hard on/off dashes
-    const dashCount = 8;
-    const gapFraction = 0.45; // fraction of each dash's arc that's cut away
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "rgba(0,0,0,1)";
-    const step = (Math.PI * 2) / dashCount;
-    for (let i = 0; i < dashCount; i++) {
-      const gapStart = i * step + step * (1 - gapFraction) * 0.5;
-      const gapEnd = gapStart + step * gapFraction;
-      ctx.beginPath();
-      ctx.moveTo(c, c);
-      ctx.arc(c, c, size, gapStart, gapEnd);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.globalCompositeOperation = "source-over";
+    const gradient = ctx.createRadialGradient(c, c, size * 0.22, c, c, size * 0.5);
+    gradient.addColorStop(0, "rgba(255,255,255,0)");
+    gradient.addColorStop(0.55, "rgba(255,255,255,0.9)");
+    gradient.addColorStop(0.75, "rgba(255,255,255,0.4)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    ctx.restore();
 
     const texture = new CanvasTexture(canvas);
     texture.needsUpdate = true;
@@ -66,7 +81,8 @@ function useHaloTexture() {
 }
 
 export default function Pedestal() {
-  const haloTexture = useHaloTexture();
+  const baseHaloTexture = useBaseHaloTexture();
+  const sweepTexture = useSweepTexture();
   const haloSpinRef = useRef<Group>(null);
 
   useFrame((_, delta) => {
@@ -80,12 +96,24 @@ export default function Pedestal() {
         <meshStandardMaterial {...pedestalMaterial} />
       </mesh>
 
+      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[HALO_RADIUS, 48]} />
+        <meshBasicMaterial
+          map={baseHaloTexture}
+          color={HALO_HDR_COLOR}
+          transparent
+          blending={AdditiveBlending}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
+
       <group ref={haloSpinRef}>
-        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[HALO_RADIUS, 48]} />
           <meshBasicMaterial
-            map={haloTexture}
-            color={HALO_HDR_COLOR}
+            map={sweepTexture}
+            color={SWEEP_HDR_COLOR}
             transparent
             blending={AdditiveBlending}
             depthWrite={false}
