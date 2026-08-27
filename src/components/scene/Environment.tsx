@@ -6,24 +6,36 @@ const SLAT_WIDTH = 0.12;
 const SLAT_GAP = 0.12;
 const SLAT_PITCH = SLAT_WIDTH + SLAT_GAP;
 const SLAT_HEIGHT = 8.8;
+// alternating blocks along the wall: a stretch of slats, then a stretch
+// of bare wall, repeating -- matching the reference photo's rhythm
+// rather than reeding the whole wall
+const SLAT_BLOCK_LENGTH = 2.6;
+const WALL_BLOCK_LENGTH = 2.6;
+const BLOCK_CYCLE = SLAT_BLOCK_LENGTH + WALL_BLOCK_LENGTH;
 
-function WoodSlats({ x, count, startZ }: { x: number; count: number; startZ: number }) {
+function WoodSlats({ x, slotCount, startZ }: { x: number; slotCount: number; startZ: number }) {
   // one InstancedMesh per wall so a dense reeded pattern (hundreds of thin
   // slats) is still a single draw call instead of hundreds of meshes
   const dummy = useMemo(() => new Object3D(), []);
   const setRef = (mesh: InstancedMesh | null) => {
     if (!mesh) return;
-    for (let i = 0; i < count; i++) {
-      dummy.position.set(x - Math.sign(x) * 0.03, 4, startZ + i * SLAT_PITCH);
+    let placed = 0;
+    for (let i = 0; i < slotCount; i++) {
+      const z = startZ + i * SLAT_PITCH;
+      const posInCycle = ((z - startZ) % BLOCK_CYCLE + BLOCK_CYCLE) % BLOCK_CYCLE;
+      if (posInCycle >= SLAT_BLOCK_LENGTH) continue;
+      dummy.position.set(x - Math.sign(x) * 0.03, 4, z);
       dummy.rotation.set(0, Math.PI / 2, 0);
       dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setMatrixAt(placed, dummy.matrix);
+      placed++;
     }
+    mesh.count = placed;
     mesh.instanceMatrix.needsUpdate = true;
   };
 
   return (
-    <instancedMesh ref={setRef} args={[undefined, undefined, count]}>
+    <instancedMesh ref={setRef} args={[undefined, undefined, slotCount]}>
       <planeGeometry args={[SLAT_WIDTH, SLAT_HEIGHT]} />
       <meshStandardMaterial color="#6b4527" metalness={0.05} roughness={0.5} />
     </instancedMesh>
@@ -58,7 +70,7 @@ export default function Environment() {
             <meshStandardMaterial color="#060c16" metalness={0.1} roughness={0.9} />
           </mesh>
 
-          <WoodSlats x={x} count={slatCount} startZ={floorStartZ} />
+          <WoodSlats x={x} slotCount={slatCount} startZ={floorStartZ} />
         </group>
       ))}
     </group>
