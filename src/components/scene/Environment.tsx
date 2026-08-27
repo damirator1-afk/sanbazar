@@ -118,6 +118,17 @@ export default function Environment() {
         <meshStandardMaterial color="#050a12" metalness={0.55} roughness={0.32} />
       </mesh>
 
+      {/* dead-end wall closing off the far end of the corridor -- sits
+          just behind FinaleLogo (FINALE_Z), not all the way out at
+          floorStartZ, so the logo reads as mounted flush on it rather
+          than floating in open corridor with a gap behind it. Default
+          plane normal (+Z) already faces back up the corridor toward
+          the camera, no rotation needed. */}
+      <mesh position={[0, 4, FINALE_Z - 1.2]} receiveShadow>
+        <planeGeometry args={[16, 9]} />
+        <meshStandardMaterial color="#060c16" metalness={0.1} roughness={0.9} />
+      </mesh>
+
       {[-7, 7].map((x) => (
         <group key={x}>
           <mesh

@@ -6,7 +6,6 @@ import { Html, useGLTF } from "@react-three/drei";
 import {
   InstancedMesh,
   Mesh,
-  MeshStandardMaterial,
   Object3D,
   Vector3,
   Quaternion,
@@ -40,18 +39,13 @@ export default function FinaleLogo() {
   const logoRef = useRef<Group>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const { scene: logoScene } = useGLTF(LOGO_MODEL_URL);
-  const logoMaterials = useMemo(() => {
-    const materials: MeshStandardMaterial[] = [];
+  useMemo(() => {
     logoScene.traverse((obj) => {
-      if (obj instanceof Mesh && obj.material instanceof MeshStandardMaterial) {
-        obj.material.transparent = true;
-        obj.material.opacity = 0;
+      if (obj instanceof Mesh) {
         obj.castShadow = true;
         obj.receiveShadow = true;
-        materials.push(obj.material);
       }
     });
-    return materials;
   }, [logoScene]);
 
   const dummy = useMemo(() => new Object3D(), []);
@@ -136,9 +130,9 @@ export default function FinaleLogo() {
       }
     }
 
-    const logoOpacity = smoothstep(0.68, 1, t);
-    for (const mat of logoMaterials) mat.opacity = logoOpacity;
-    if (logoRef.current && logoOpacity > 0.001) {
+    // mounted on the end wall like a sign, not a scroll-gated reveal --
+    // always visible and rotating, same as any other showroom model
+    if (logoRef.current) {
       logoRef.current.rotation.y += delta * 0.25;
     }
     if (labelRef.current) {
