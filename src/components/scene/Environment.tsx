@@ -25,7 +25,10 @@ function WoodSlats({ x, slotCount, startZ }: { x: number; slotCount: number; sta
       const posInCycle = ((z - startZ) % BLOCK_CYCLE + BLOCK_CYCLE) % BLOCK_CYCLE;
       if (posInCycle >= SLAT_BLOCK_LENGTH) continue;
       dummy.position.set(x - Math.sign(x) * 0.03, 4, z);
-      dummy.rotation.set(0, Math.PI / 2, 0);
+      // face the corridor's center, not just always +X -- the right-hand
+      // wall (x>0) needs the opposite yaw or its normal points outward,
+      // away from the camera, and the whole plane backface-culls invisible
+      dummy.rotation.set(0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(placed, dummy.matrix);
       placed++;
@@ -74,11 +77,17 @@ function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number
     <>
       {segments.map((s, i) => (
         <group key={i}>
-          <mesh position={[x - Math.sign(x) * 0.015, STRIP_TOP_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
+          <mesh
+            position={[x - Math.sign(x) * 0.015, STRIP_TOP_Y, s.z]}
+            rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+          >
             <planeGeometry args={[s.length, STRIP_THICKNESS]} />
             <meshBasicMaterial color={STRIP_HDR_COLOR} toneMapped={false} />
           </mesh>
-          <mesh position={[x - Math.sign(x) * 0.015, STRIP_BOTTOM_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
+          <mesh
+            position={[x - Math.sign(x) * 0.015, STRIP_BOTTOM_Y, s.z]}
+            rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+          >
             <planeGeometry args={[s.length, STRIP_THICKNESS]} />
             <meshBasicMaterial color={STRIP_HDR_COLOR} toneMapped={false} />
           </mesh>
@@ -111,7 +120,11 @@ export default function Environment() {
 
       {[-7, 7].map((x) => (
         <group key={x}>
-          <mesh position={[x, 4, floorCenterZ]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+          <mesh
+            position={[x, 4, floorCenterZ]}
+            rotation={[0, x < 0 ? Math.PI / 2 : -Math.PI / 2, 0]}
+            receiveShadow
+          >
             <planeGeometry args={[floorLength, 9]} />
             <meshStandardMaterial color="#060c16" metalness={0.1} roughness={0.9} />
           </mesh>
