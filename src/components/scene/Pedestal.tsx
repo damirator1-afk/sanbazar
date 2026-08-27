@@ -18,10 +18,11 @@ const HALO_HDR_COLOR = new Color(1, 1, 1).multiplyScalar(4);
 const HALO_SPIN_SPEED = 0.35;
 
 // radial falloff (transparent under the pedestal, soft peak near the
-// base edge, fading out by the rim) plus a handful of brighter blobs
-// unevenly spaced around that ring -- a perfectly even ring wouldn't
-// show any motion once it spins, these hotspots are what make the spin
-// actually visible
+// base edge, fading out by the rim), then carved into distinct dashes
+// around the circumference -- the previous attempt used subtle
+// brightness bumps on a continuous ring, which blurred (canvas gradient
+// + the scene's Bloom pass, twice) into something visually uniform, so
+// the spin never actually showed. Hard gaps survive that blur.
 function useHaloTexture() {
   return useMemo(() => {
     const size = 256;
@@ -34,26 +35,26 @@ function useHaloTexture() {
 
     const base = ctx.createRadialGradient(c, c, size * 0.22, c, c, size * 0.5);
     base.addColorStop(0, "rgba(255,255,255,0)");
-    base.addColorStop(0.55, "rgba(255,255,255,0.32)");
-    base.addColorStop(0.75, "rgba(255,255,255,0.14)");
+    base.addColorStop(0.55, "rgba(255,255,255,0.4)");
+    base.addColorStop(0.75, "rgba(255,255,255,0.18)");
     base.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, size, size);
 
-    const ringRadius = size * 0.37;
-    const blobRadius = size * 0.13;
-    const blobCount = 6;
-    ctx.globalCompositeOperation = "lighter";
-    for (let i = 0; i < blobCount; i++) {
-      const angle = (i / blobCount) * Math.PI * 2;
-      const bx = c + Math.cos(angle) * ringRadius;
-      const by = c + Math.sin(angle) * ringRadius;
-      const blob = ctx.createRadialGradient(bx, by, 0, bx, by, blobRadius);
-      blob.addColorStop(0, "rgba(255,255,255,0.55)");
-      blob.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = blob;
+    // cut real gaps out of the ring -- destination-out erases alpha
+    // regardless of fill color, so this leaves hard on/off dashes
+    const dashCount = 8;
+    const gapFraction = 0.45; // fraction of each dash's arc that's cut away
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    const step = (Math.PI * 2) / dashCount;
+    for (let i = 0; i < dashCount; i++) {
+      const gapStart = i * step + step * (1 - gapFraction) * 0.5;
+      const gapEnd = gapStart + step * gapFraction;
       ctx.beginPath();
-      ctx.arc(bx, by, blobRadius, 0, Math.PI * 2);
+      ctx.moveTo(c, c);
+      ctx.arc(c, c, size, gapStart, gapEnd);
+      ctx.closePath();
       ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
