@@ -45,9 +45,13 @@ function WoodSlats({ x, slotCount, startZ }: { x: number; slotCount: number; sta
 const STRIP_THICKNESS = 0.08;
 const STRIP_TOP_Y = 8.3;
 const STRIP_BOTTOM_Y = 0.08;
+// plain white light, not a colored accent -- matches the existing
+// directional/fill lighting already in the scene rather than adding a
+// tinted amber glow
+const STRIP_COLOR = "#ffffff";
 
-/** Amber rim-light strips along the top and bottom edge of each *plain
- * wall* block only — the slat blocks stay without them, per reference. */
+/** Rim-light strips along the top and bottom edge of each *plain wall*
+ * block only — the slat blocks stay without them, per reference. */
 function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number; floorLength: number }) {
   const floorEnd = startZ + floorLength;
   const cycles = Math.ceil(floorLength / BLOCK_CYCLE) + 1;
@@ -68,11 +72,11 @@ function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number
         <group key={i}>
           <mesh position={[x - Math.sign(x) * 0.015, STRIP_TOP_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
             <planeGeometry args={[s.length, STRIP_THICKNESS]} />
-            <meshBasicMaterial color="#ffb35c" toneMapped={false} />
+            <meshBasicMaterial color={STRIP_COLOR} toneMapped={false} />
           </mesh>
           <mesh position={[x - Math.sign(x) * 0.015, STRIP_BOTTOM_Y, s.z]} rotation={[0, Math.PI / 2, 0]}>
             <planeGeometry args={[s.length, STRIP_THICKNESS]} />
-            <meshBasicMaterial color="#ffb35c" toneMapped={false} />
+            <meshBasicMaterial color={STRIP_COLOR} toneMapped={false} />
           </mesh>
         </group>
       ))}
