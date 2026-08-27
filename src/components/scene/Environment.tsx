@@ -9,8 +9,8 @@ const SLAT_HEIGHT = 8.8;
 // alternating blocks along the wall: a stretch of slats, then a stretch
 // of bare wall, repeating -- matching the reference photo's rhythm
 // rather than reeding the whole wall
-const SLAT_BLOCK_LENGTH = 2.6;
-const WALL_BLOCK_LENGTH = 2.6;
+const SLAT_BLOCK_LENGTH = 5.2;
+const WALL_BLOCK_LENGTH = 5.2;
 const BLOCK_CYCLE = SLAT_BLOCK_LENGTH + WALL_BLOCK_LENGTH;
 
 function WoodSlats({ x, slotCount, startZ }: { x: number; slotCount: number; startZ: number }) {
