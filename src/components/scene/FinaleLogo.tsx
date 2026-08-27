@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
 import {
   InstancedMesh,
   Mesh,
+  MeshStandardMaterial,
   Object3D,
   Vector3,
   Quaternion,
@@ -41,10 +42,19 @@ export default function FinaleLogo() {
   const meshRef = useRef<InstancedMesh>(null);
   const groupVisible = useRef(false);
   const logoRef = useRef<Group>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
   const { scene: logoScene } = useGLTF(LOGO_MODEL_URL);
-  useMemo(() => {
+  // one-time setup only -- opacity itself is set fresh every frame by
+  // re-traversing logoScene directly in useFrame below, rather than
+  // caching the material list in a ref/memo. React Compiler's lint rules
+  // treat anything reachable from useMemo/useEffect-captured values as
+  // immutable after the fact, which fights the standard R3F pattern of
+  // mutating three.js objects imperatively per frame.
+  useEffect(() => {
     logoScene.traverse((obj) => {
-      if (obj instanceof Mesh) {
+      if (obj instanceof Mesh && obj.material instanceof MeshStandardMaterial) {
+        obj.material.transparent = true;
+        obj.material.opacity = 0;
         obj.castShadow = true;
         obj.receiveShadow = true;
       }
@@ -133,10 +143,19 @@ export default function FinaleLogo() {
       }
     }
 
-    // mounted on the end wall like a sign, not a scroll-gated reveal --
-    // always visible and rotating, same as any other showroom model
-    if (logoRef.current) {
+    const logoOpacity = smoothstep(0.68, 1, t);
+    logoScene.traverse((obj) => {
+      if (obj instanceof Mesh && obj.material instanceof MeshStandardMaterial) {
+        obj.material.opacity = logoOpacity;
+      }
+    });
+    if (logoRef.current && logoOpacity > 0.001) {
       logoRef.current.rotation.y += delta * 0.25;
+    }
+    if (labelRef.current) {
+      const lo = smoothstep(0.8, 1, t);
+      labelRef.current.style.opacity = String(lo);
+      labelRef.current.style.transform = `translateY(${(1 - lo) * 16}px)`;
     }
   });
 
@@ -167,7 +186,7 @@ export default function FinaleLogo() {
         center
         style={{ pointerEvents: "none" }}
       >
-        <div className="flex flex-col items-center text-center">
+        <div ref={labelRef} className="flex flex-col items-center text-center opacity-0">
           <span className="font-display text-3xl font-extrabold tracking-wide text-brand-ink sm:text-4xl">
             SANBAZAR
           </span>
