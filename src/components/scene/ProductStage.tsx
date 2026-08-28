@@ -33,11 +33,17 @@ export default function ProductStage({ category, allowShadow }: ProductStageProp
   // Ten simultaneous shadow-casting spotlights is a lot of shadow-map
   // passes for very little visual gain — only the stage the camera is
   // actually near needs one. Everything else stays lit without shadows.
+  // Threshold must be <= half the 1.0 step spacing between products,
+  // or two neighbouring stages both read "near" at once near the
+  // midpoint -- each castShadow flip allocates/frees a shadow-map
+  // render target, so overlapping thresholds meant that happened on
+  // 2-3 lights at once instead of a single clean handoff, causing a
+  // frame hitch right around each product while scrolling.
   useFrame(() => {
     const light = lightRef.current;
     if (!light) return;
     const currentStep = scrollProgress.cameraStep;
-    const isNear = allowShadow && Math.abs(currentStep - myStep) < 1.1;
+    const isNear = allowShadow && Math.abs(currentStep - myStep) < 0.5;
     if (isNear !== wasNear.current) {
       wasNear.current = isNear;
       light.castShadow = isNear;
