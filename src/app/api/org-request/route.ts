@@ -24,6 +24,17 @@ export async function POST(request: NextRequest) {
     const contactPhone = String(body.contactPhone || "").trim();
     const items: OrgRequestItem[] = Array.isArray(body.items) ? body.items : [];
 
+    // Спам-ловушка: скрытое поле "website" видно только ботам, а форма,
+    // отправленная быстрее чем за 1.5с с открытия, тоже почти наверняка
+    // не от человека. Отвечаем как будто всё прошло успешно, чтобы бот
+    // не понял, что его отфильтровали, и не стал подбирать обход.
+    const honeypot = String(body.website || "").trim();
+    const formOpenedAt = Number(body.formOpenedAt || 0);
+    const tooFast = formOpenedAt > 0 && Date.now() - formOpenedAt < 1500;
+    if (honeypot || tooFast) {
+      return NextResponse.json({ success: true, id: "ok" });
+    }
+
     if (!companyName || !contactEmail || items.length === 0) {
       return NextResponse.json(
         { error: "Укажите компанию, email и хотя бы один товар" },

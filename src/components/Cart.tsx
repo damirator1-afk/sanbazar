@@ -29,6 +29,11 @@ export default function Cart() {
   const [companyName, setCompanyName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  // Спам-ловушка: скрытое от людей поле (боты часто заполняют всё подряд)
+  // + время с открытия формы (боты обычно шлют мгновенно). Ничего не
+  // видно и не мешает обычному пользователю.
+  const [website, setWebsite] = useState("");
+  const [formOpenedAt, setFormOpenedAt] = useState(0);
 
   const handleKaspiClick = () => {
     // Оплата Kaspi Pay ещё не подключена — нужен API-ключ продавца.
@@ -49,6 +54,8 @@ export default function Cart() {
           companyName,
           contactEmail,
           contactPhone,
+          website,
+          formOpenedAt,
           items: items.map((it) => ({
             article: it.article,
             title: it.title,
@@ -201,7 +208,10 @@ export default function Cart() {
                       {orgState === "idle" && (
                         <button
                           type="button"
-                          onClick={() => setOrgState("form")}
+                          onClick={() => {
+                            setFormOpenedAt(Date.now());
+                            setOrgState("form");
+                          }}
                           className="font-mono-label w-full text-center text-[11px] uppercase text-brand-blue-light hover:text-brand-ink"
                         >
                           Нужно коммерческое предложение для организации? →
@@ -219,6 +229,17 @@ export default function Cart() {
                           <p className="font-mono-label text-[10px] uppercase text-brand-muted">
                             Для организации — КП придёт на почту
                           </p>
+                          <input
+                            type="text"
+                            name="website"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            tabIndex={-1}
+                            autoComplete="off"
+                            aria-hidden="true"
+                            className="absolute h-0 w-0 opacity-0"
+                            style={{ left: "-9999px" }}
+                          />
                           <input
                             required
                             placeholder="Название компании"
