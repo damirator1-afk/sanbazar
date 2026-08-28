@@ -31,8 +31,12 @@ const LOGO_SCALE = 2.3 * 1.5;
 // (bbox y: 0..0.98) -- shift down by half that (scaled) so it centers on
 // FINALE_CENTER the same way the old plane image did
 const LOGO_Y_OFFSET = -0.49 * LOGO_SCALE;
-// label sits below the logo -- half the logo's height (above) plus a gap
-const LABEL_Y_OFFSET = -(0.49 * LOGO_SCALE + 0.5);
+// NOT derived from the logo's height -- at the bigger scale that pushed
+// this below y=0 (behind/under the floor), landing the label right at
+// the bottom edge of the screen, under the footer bar's blur. Fixed at
+// the same height that was already proven to read fine below the
+// smaller logo.
+const LABEL_Y_OFFSET = -1.6;
 
 function smoothstep(edge0: number, edge1: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));

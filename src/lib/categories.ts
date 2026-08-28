@@ -61,8 +61,11 @@ export function buildCameraPath(): CatmullRomCurve3 {
   });
   points.push(new Vector3(0, 3.2, FINALE_Z + 8));
   // pulled well back so the medallion reads as a framed reveal rather
-  // than the camera ending up nearly inside the particle cluster
-  points.push(new Vector3(0, 2.3, FINALE_Z + 5));
+  // than the camera ending up nearly inside the particle cluster.
+  // Distance bumped further (5 -> 6.5) after the logo itself got 50%
+  // bigger, so the top of the drop and the label below it both stay
+  // clear of the fixed header/footer bars instead of crowding the edges.
+  points.push(new Vector3(0, 2.3, FINALE_Z + 6.5));
   return new CatmullRomCurve3(points, false, "catmullrom", 0.4);
 }
 
@@ -75,8 +78,10 @@ export function buildLookPath(): CatmullRomCurve3 {
   });
   points.push(new Vector3(0, 1.6, FINALE_Z));
   // centred on the medallion, not past it — the previous version looked
-  // straight through the logo into the fog instead of at it
-  points.push(new Vector3(0, 1.9, FINALE_Z));
+  // straight through the logo into the fog instead of at it. Raised
+  // slightly (1.9 -> 2.1) to re-center the taller logo+label composition
+  // now that the logo is 50% bigger.
+  points.push(new Vector3(0, 2.1, FINALE_Z));
   return new CatmullRomCurve3(points, false, "catmullrom", 0.4);
 }
 
