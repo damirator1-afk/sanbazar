@@ -17,9 +17,10 @@ import { CATEGORIES, FINALE_Z, TOTAL_STEPS } from "@/lib/categories";
 import { scrollProgress } from "@/lib/scrollProgress";
 
 const PARTICLE_COUNT = 220;
-// up near the ceiling (wall/ceiling line sits around y=8.5) with a bit
-// of headroom, rather than mid-wall
-const FINALE_CENTER = new Vector3(0, 6, FINALE_Z);
+// the finale camera ends at (0, 2.3, FINALE_Z+5) looking at (0, 1.9,
+// FINALE_Z) -- y=6 (near the ceiling) sits well outside that view, so
+// the logo needs to stay near the look-at target's height to be seen
+const FINALE_CENTER = new Vector3(0, 2.05, FINALE_Z);
 // scrollProgress.cameraStep is a continuous step index (0..TOTAL_STEPS),
 // not a 0..1 fraction — this threshold lives in that same step-space
 const FINALE_START_STEP = TOTAL_STEPS - 1.85;
