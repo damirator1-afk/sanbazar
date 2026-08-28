@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@sanity/client";
 import { upsertSocialDraft } from "@/lib/socialDraft";
+import { isAdminAuthorized } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,10 @@ function slugifyId(article: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 });
+  }
+
   try {
     const form = await request.formData();
 

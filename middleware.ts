@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isAdminAuthorized } from "@/lib/adminAuth";
 
-// Простая защита /admin/* (страница + её API) — логин "admin", пароль
-// из ADMIN_UPLOAD_PASSWORD в .env.local. Достаточно для внутреннего
-// инструмента на локальной машине; если сайт когда-нибудь будет
-// задеплоен публично, стоит заменить на что-то посерьёзнее.
+// Защита /admin/* (страница) и /api/admin/* (её API) — логин "admin",
+// пароль из ADMIN_UPLOAD_PASSWORD в .env.local. Matcher должен покрывать
+// оба префикса: /api/admin/upload-product раньше не подпадал под
+// /admin/:path* (другой корневой сегмент пути) и был доступен без
+// авторизации несмотря на защищённую страницу — route.ts теперь тоже
+// проверяет это сам, но не полагаемся только на путь здесь.
 export function middleware(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  const expected = process.env.ADMIN_UPLOAD_PASSWORD;
-
-  if (expected && auth === `Basic ${Buffer.from(`admin:${expected}`).toString("base64")}`) {
+  if (isAdminAuthorized(request)) {
     return NextResponse.next();
   }
 
@@ -20,5 +20,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
