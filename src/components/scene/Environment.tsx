@@ -97,6 +97,36 @@ function WallLightStrips({ x, startZ, floorLength }: { x: number; startZ: number
   );
 }
 
+const CEILING_LIGHT_SPACING = 13;
+const CEILING_Y = 8.4;
+// same overbright trick as the wall/pedestal glow elements -- the lens
+// itself blooms, the pointLight underneath it does the actual floor
+// illumination. Plain white (not tinted) to match the wall rim lights.
+const CEILING_LENS_COLOR = new Color(1, 1, 1).multiplyScalar(5);
+
+/** Round recessed downlights along the ceiling centerline, like the
+ * reference showroom photos -- a small glowing lens (bloom-driven, see
+ * STRIP_HDR_COLOR above) plus a real, non-shadow-casting point light
+ * for a soft pool on the floor below each fixture. */
+function CeilingLights({ startZ, floorLength }: { startZ: number; floorLength: number }) {
+  const count = Math.floor(floorLength / CEILING_LIGHT_SPACING);
+  const fixtures = Array.from({ length: count }, (_, i) => startZ + (i + 0.5) * CEILING_LIGHT_SPACING);
+
+  return (
+    <>
+      {fixtures.map((z) => (
+        <group key={z} position={[0, CEILING_Y, z]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.14, 0.14, 0.03, 24]} />
+            <meshBasicMaterial color={CEILING_LENS_COLOR} toneMapped={false} />
+          </mesh>
+          <pointLight intensity={9} distance={7} decay={2} color="#fff6ea" />
+        </group>
+      ))}
+    </>
+  );
+}
+
 /** Dark matte floor with a faint reflection, plus the corridor walls
  * fading into darkness — kept as simple planes so it stays cheap. Thin
  * vertical wood slats (reeded/fluted look) sit in front of the walls,
@@ -128,6 +158,8 @@ export default function Environment() {
         <planeGeometry args={[16, 9]} />
         <meshStandardMaterial color="#060c16" metalness={0.1} roughness={0.9} />
       </mesh>
+
+      <CeilingLights startZ={floorStartZ} floorLength={floorLength} />
 
       {[-7, 7].map((x) => (
         <group key={x}>
