@@ -10,7 +10,8 @@
  * Usage:  npm run import-catalog
  */
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
@@ -243,6 +244,46 @@ function slugifyId(article: string): string {
   return `product-${cleaned}`;
 }
 
+function sha1File(filePath: string): string {
+  return createHash("sha1").update(readFileSync(filePath)).digest("hex");
+}
+
+// Sanity content-addresses assets by sha1 of the exact uploaded bytes and
+// bakes that hash into the asset id itself (image-<sha1>-WxH-fmt or
+// file-<sha1>-ext) — reading it back out lets us tell "same file as last
+// time" from "changed" without a separate lookup.
+function assetHash(assetId: string | undefined): string | null {
+  if (!assetId) return null;
+  const m = assetId.match(/^(?:image|file)-([a-f0-9]+)-/);
+  return m ? m[1] : null;
+}
+
+// gltf-transform optimize is the slow part of this script (runs an npx
+// subprocess per model), and its output is deterministic for the same
+// input — so instead of re-running it every time just to throw away an
+// identical result, cache "raw source file hash -> already-uploaded
+// asset id" across runs. Lives next to the catalog (not in git, каталог/
+// isn't a tracked repo) so it's fine as plain local state.
+const MODEL_CACHE_PATH = path.join(CATALOG_DIR, ".import-cache.json");
+
+interface ModelCacheEntry {
+  sourceHash: string;
+  assetRef: string;
+}
+
+function loadModelCache(): Record<string, ModelCacheEntry> {
+  if (!existsSync(MODEL_CACHE_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(MODEL_CACHE_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveModelCache(cache: Record<string, ModelCacheEntry>) {
+  writeFileSync(MODEL_CACHE_PATH, JSON.stringify(cache, null, 2));
+}
+
 async function main() {
   const rows = readRows();
   console.log(`Найдено строк товаров: ${rows.length}\n`);
@@ -250,6 +291,7 @@ async function main() {
   let imported = 0;
   let skipped = 0;
   const warnings: string[] = [];
+  const modelCache = loadModelCache();
 
   for (const row of rows) {
     if (!row.article) {
@@ -279,10 +321,50 @@ async function main() {
 
     process.stdout.write(`Импорт: ${row.article} — ${row.title}...`);
     try {
-      const images = photoFiles.length > 0 ? await uploadImages(row.article, photoFiles) : [];
-      const model = modelFile ? await uploadModel(modelFile) : undefined;
+      const docId = slugifyId(row.article);
+      const existing = await client.getDocument(docId) as {
+        images?: Awaited<ReturnType<typeof uploadImages>>;
+        model?: { asset?: { _ref?: string } };
+      } | undefined;
+
+      // Photos: reuse the existing references untouched when every local
+      // file's hash already matches what's on the document, in the same
+      // order — re-uploading identical bytes would just create duplicate,
+      // orphaned assets (Sanity never deletes the old ones on its own).
+      const localPhotoHashes = photoFiles.map(sha1File);
+      const existingPhotoHashes = (existing?.images ?? []).map((img) => assetHash(img.asset?._ref));
+      const photosUnchanged =
+        photoFiles.length > 0 &&
+        localPhotoHashes.length === existingPhotoHashes.length &&
+        localPhotoHashes.every((h, i) => h === existingPhotoHashes[i]);
+      const images = photosUnchanged
+        ? existing!.images ?? []
+        : photoFiles.length > 0
+          ? await uploadImages(row.article, photoFiles)
+          : [];
+
+      // 3D model: gltf-transform optimize is the expensive step here, so
+      // skip it (not just the upload) when the raw source file's hash
+      // matches what we cached from the last successful optimize+upload
+      // for this article, and Sanity still has that same asset attached.
+      let model: Awaited<ReturnType<typeof uploadModel>> | undefined;
+      let modelChanged = false;
+      if (modelFile) {
+        const sourceHash = sha1File(modelFile);
+        const cached = modelCache[row.article];
+        const existingModelHash = assetHash(existing?.model?.asset?._ref);
+        if (cached && cached.sourceHash === sourceHash && assetHash(cached.assetRef) === existingModelHash) {
+          model = { _type: "file" as const, asset: { _type: "reference" as const, _ref: cached.assetRef } };
+        } else {
+          model = await uploadModel(modelFile);
+          modelCache[row.article] = { sourceHash, assetRef: model.asset._ref };
+          saveModelCache(modelCache);
+          modelChanged = true;
+        }
+      }
+
       await client.createOrReplace({
-        _id: slugifyId(row.article),
+        _id: docId,
         _type: "product",
         category: categoryKey,
         article: row.article,
@@ -295,7 +377,13 @@ async function main() {
         images,
         model,
       });
-      console.log(` OK (${photoFiles.length} фото${modelFile ? ", 3D-модель" : ""})`);
+      const photoNote = photoFiles.length === 0
+        ? "0 фото"
+        : photosUnchanged
+          ? `${photoFiles.length} фото без изменений`
+          : `${photoFiles.length} фото загружено`;
+      const modelNote = !modelFile ? "" : modelChanged ? ", 3D загружена" : ", 3D без изменений";
+      console.log(` OK (${photoNote}${modelNote})`);
       imported++;
 
       if (row.social) {
