@@ -12,6 +12,29 @@ export const PRODUCT_CATEGORIES = [
   { key: "accessories", title: "Комплектующие" },
 ] as const;
 
+// Optional second level, purely for filtering on the catalog page
+// (/category/[key]) — the 3D showroom still has one pedestal per
+// top-level category above, this doesn't add stops to it. Keyed by the
+// parent category so the Studio only offers the relevant subset (see
+// `hidden`/`options.list` on the `subcategory` field below).
+export const PRODUCT_SUBCATEGORIES: Record<string, { key: string; title: string }[]> = {
+  faucet: [
+    { key: "faucet-sink", title: "Смесители для раковины" },
+    { key: "faucet-kitchen", title: "Смесители для кухни" },
+    { key: "faucet-bath", title: "Смесители для ванны" },
+  ],
+  siphon: [
+    { key: "siphon-sink", title: "Сифоны для раковины" },
+    { key: "siphon-kitchen", title: "Сифоны для кухни" },
+    { key: "siphon-washbasin", title: "Сифоны для умывальника" },
+    { key: "siphon-bath", title: "Сифоны для ванны" },
+    { key: "siphon-shower-tray", title: "Сифоны для душевого поддона" },
+    { key: "siphon-toilet", title: "Сифоны для унитаза" },
+    { key: "siphon-urinal", title: "Сифоны для писсуара" },
+    { key: "siphon-double-sink", title: "Сифоны для двойных моек" },
+  ],
+};
+
 export const product = defineType({
   name: "product",
   title: "Товар",
@@ -25,6 +48,18 @@ export const product = defineType({
         list: PRODUCT_CATEGORIES.map((c) => ({ title: c.title, value: c.key })),
       },
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "subcategory",
+      title: "Подкатегория",
+      type: "string",
+      description: "Уточнение внутри категории (например «для кухни» / «для ванны») — только для фильтра в каталоге на сайте, необязательно.",
+      options: {
+        list: Object.values(PRODUCT_SUBCATEGORIES)
+          .flat()
+          .map((s) => ({ title: s.title, value: s.key })),
+      },
+      hidden: ({ document }) => !PRODUCT_SUBCATEGORIES[document?.category as string],
     }),
     defineField({
       name: "article",

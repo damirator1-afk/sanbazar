@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CATEGORIES } from "@/lib/categories";
+import { PRODUCT_SUBCATEGORIES } from "@/sanity/schemaTypes/product";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { PRODUCTS_BY_CATEGORY_QUERY, type Product, type RawProduct } from "@/sanity/lib/queries";
@@ -13,6 +14,12 @@ import Cart from "@/components/Cart";
 // re-fetch from Sanity at most every 10 sec — new/edited products in the
 // Studio (incl. hiding a product) show up quickly without a redeploy
 export const revalidate = 10;
+
+const SUBCATEGORY_KEY_TO_TITLE = new Map(
+  Object.values(PRODUCT_SUBCATEGORIES)
+    .flat()
+    .map((s) => [s.key, s.title])
+);
 
 export function generateStaticParams() {
   return CATEGORIES.map((c) => ({ key: c.key }));
@@ -39,6 +46,7 @@ async function getProducts(categoryKey: string): Promise<Product[]> {
     article: p.article,
     title: p.title,
     brand: p.brand,
+    subcategory: p.subcategory ? SUBCATEGORY_KEY_TO_TITLE.get(p.subcategory) ?? null : null,
     price: p.price,
     inStock: p.inStock,
     description: p.description,

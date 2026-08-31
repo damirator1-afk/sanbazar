@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import * as XLSX from "xlsx";
 import { createClient } from "@sanity/client";
-import { PRODUCT_CATEGORIES } from "../src/sanity/schemaTypes/product";
+import { PRODUCT_CATEGORIES, PRODUCT_SUBCATEGORIES } from "../src/sanity/schemaTypes/product";
 import { upsertSocialDraft } from "../src/lib/socialDraft";
 import { optimizeModel } from "../src/lib/optimizeModel";
 
@@ -59,6 +59,15 @@ const CATEGORY_TITLE_TO_KEY = new Map<string, string>(
   PRODUCT_CATEGORIES.map((c) => [c.title, c.key])
 );
 
+// Sub-category titles are only unique *within* their parent category, so
+// this maps "categoryKey|title" -> subcategoryKey rather than a flat
+// title -> key lookup.
+const SUBCATEGORY_TITLE_TO_KEY = new Map<string, string>(
+  Object.entries(PRODUCT_SUBCATEGORIES).flatMap(([categoryKey, subs]) =>
+    subs.map((s) => [`${categoryKey}|${s.title}`, s.key] as const)
+  )
+);
+
 interface ProductRow {
   categoryTitle: string;
   article: string;
@@ -78,6 +87,11 @@ interface ProductRow {
   oldPrice?: number;
   promoText?: string;
   postText?: string;
+  // Appended as the last column rather than inserted after "Категория" —
+  // this file already holds real product data, and appending avoids
+  // reshuffling every other column's position in both the sheet and the
+  // positional destructuring below.
+  subcategoryTitle?: string;
 }
 
 // Ячейка с датой в Excel парсится библиотекой xlsx как JS Date, но с
@@ -145,7 +159,7 @@ function readRows(): ProductRow[] {
   for (const r of dataRows) {
     const [
       category, article, title, brand, price, inStock, description, specs, social,
-      publishAtRaw, format, theme, oldPrice, promoText, postText,
+      publishAtRaw, format, theme, oldPrice, promoText, postText, subcategoryTitle,
     ] = r as (string | number)[];
     if (!category && !article) continue; // blank trailing row
     rows.push({
@@ -164,6 +178,7 @@ function readRows(): ProductRow[] {
       oldPrice: oldPrice ? Number(oldPrice) || undefined : undefined,
       promoText: String(promoText ?? "").trim() || undefined,
       postText: String(postText ?? "").trim() || undefined,
+      subcategoryTitle: String(subcategoryTitle ?? "").trim() || undefined,
     });
   }
   return rows;
@@ -313,6 +328,23 @@ async function main() {
       continue;
     }
 
+    let subcategoryKey: string | undefined;
+    if (row.subcategoryTitle) {
+      const available = PRODUCT_SUBCATEGORIES[categoryKey];
+      if (!available) {
+        warnings.push(
+          `Артикул "${row.article}": у категории "${row.categoryTitle}" нет подкатегорий — "${row.subcategoryTitle}" проигнорирована`
+        );
+      } else {
+        subcategoryKey = SUBCATEGORY_TITLE_TO_KEY.get(`${categoryKey}|${row.subcategoryTitle}`);
+        if (!subcategoryKey) {
+          warnings.push(
+            `Артикул "${row.article}": неизвестная подкатегория "${row.subcategoryTitle}" для "${row.categoryTitle}" — доступные: ${available.map((s) => s.title).join(", ")}`
+          );
+        }
+      }
+    }
+
     const photoFiles = findPhotos(row.article);
     if (photoFiles.length === 0) {
       warnings.push(`Артикул "${row.article}": фото не найдено (папка «фото»)`);
@@ -367,6 +399,7 @@ async function main() {
         _id: docId,
         _type: "product",
         category: categoryKey,
+        subcategory: subcategoryKey,
         article: row.article,
         title: row.title,
         brand: row.brand || undefined,

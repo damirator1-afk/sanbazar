@@ -18,6 +18,7 @@ export const PRODUCTS_BY_CATEGORY_QUERY = groq`
     article,
     title,
     brand,
+    subcategory,
     price,
     inStock,
     description,
@@ -45,6 +46,7 @@ export interface RawProduct {
   article: string;
   title: string;
   brand: string | null;
+  subcategory: string | null;
   price: number;
   inStock: boolean;
   description: string | null;
@@ -70,6 +72,7 @@ export interface Product {
   article: string;
   title: string;
   brand: string | null;
+  subcategory: string | null;
   price: number;
   inStock: boolean;
   description: string | null;

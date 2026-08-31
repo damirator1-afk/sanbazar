@@ -25,7 +25,13 @@ export default function ProductGrid({ products }: ProductGridProps) {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
   }, [products]);
 
+  const subcategories = useMemo(() => {
+    const set = new Set(products.map((p) => p.subcategory).filter((s): s is string => !!s));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ru"));
+  }, [products]);
+
   const [brand, setBrand] = useState<string>("all");
+  const [subcategory, setSubcategory] = useState<string>("all");
   const [sort, setSort] = useState<SortOrder>("default");
   const [zoomed, setZoomed] = useState<ZoomTarget | null>(null);
   const [analogsOf, setAnalogsOf] = useState<Product | null>(null);
@@ -44,15 +50,31 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
   const visible = useMemo(() => {
     let list = brand === "all" ? products : products.filter((p) => p.brand === brand);
+    if (subcategory !== "all") list = list.filter((p) => p.subcategory === subcategory);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [products, brand, sort]);
+  }, [products, brand, subcategory, sort]);
 
   return (
     <div>
-      {brands.length > 0 && (
+      {(brands.length > 0 || subcategories.length > 0) && (
         <div className="mb-8 flex flex-wrap items-center gap-4">
+          {subcategories.length > 0 && (
+            <select
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+              className="font-mono-label rounded-full border border-white/15 bg-brand-navy-deep/60 px-4 py-2 text-[11px] text-brand-ink outline-none transition-colors hover:border-brand-blue/50"
+            >
+              <option value="all">Все виды</option>
+              {subcategories.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          )}
+
           <select
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
