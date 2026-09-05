@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Unbounded, Golos_Text, JetBrains_Mono } from "next/font/google";
 import { CartProvider } from "@/components/CartProvider";
+import ShoppingAssistant from "@/components/ShoppingAssistant";
 import "./globals.css";
 
 const unbounded = Unbounded({
@@ -36,7 +37,10 @@ export default function RootLayout({
       className={`${unbounded.variable} ${golos.variable} ${jetbrains.variable} h-full`}
     >
       <body className="min-h-full bg-brand-navy-deep text-brand-ink font-sans antialiased">
-        <CartProvider>{children}</CartProvider>
+        <CartProvider>
+          {children}
+          <ShoppingAssistant />
+        </CartProvider>
       </body>
     </html>
   );
